@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>단지의 프로필</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23e8253a' rx='18'/><text y='82' x='50' text-anchor='middle' font-size='72'>🐰</text></svg>">
+<title>단지</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white' rx='18'/><ellipse cx='29' cy='21' rx='13' ry='20' fill='%23e8253a'/><ellipse cx='71' cy='21' rx='13' ry='20' fill='%23e8253a'/><circle cx='50' cy='67' r='35' fill='%23e8253a'/></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -292,10 +292,9 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
 <!-- ── NAV ── -->
 <nav id="topnav">
   <div class="logo">
-    <svg class="rab" width="16" height="20" viewBox="0 0 24 24"><use href="#rab-s"/></svg>
-    단지의 프로필
+    <svg class="rab" width="16" height="20" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
+    단지
   </div>
-  <a href="#/">전체 프로필</a>
   <span class="sp"></span>
   <span class="nav-cur" id="nav-user"></span>
   <button class="nav-edit-btn" id="nav-edit-btn" style="display:none" onclick="toggleEditMode()">✏ 수정 모드</button>
@@ -403,7 +402,7 @@ async function renderListing(app) {
     app.innerHTML = `<div id="listing-pg">
       <div class="list-hdr">
         <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
-        <span class="list-title">단지의 프로필</span>
+        <span class="list-title">단지</span>
         <span style="color:var(--muted);font-size:10px">[ Supabase 연결 후 사용 가능 ]</span>
       </div>
       <div class="notice-box">Supabase URL과 KEY를 설정하면 프로필이 표시됩니다.</div>
@@ -415,7 +414,7 @@ async function renderListing(app) {
   app.innerHTML = `<div id="listing-pg">
     <div class="list-hdr">
       <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
-      <span class="list-title">단지의 프로필</span>
+      <span class="list-title">단지</span>
     </div>
     <div class="card-grid">
       ${items}
@@ -823,12 +822,17 @@ function renderCal() {
 function calNav(d) { calM+=d; if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal(); }
 
 /* ── MODAL ── */
-function openModal() {
+async function openModal() {
   const m = document.getElementById('login-modal');
   const notice = document.getElementById('m-notice');
   if (notice) notice.style.display = DEMO ? '' : 'none';
   m.style.display = '';
   switchTab('login');
+  if (!DEMO) {
+    const { count } = await db.from('profiles').select('*', { count: 'exact', head: true });
+    const tabReg = document.getElementById('tab-reg');
+    if (tabReg) tabReg.style.display = count > 0 ? 'none' : '';
+  }
 }
 function closeModal() {
   document.getElementById('login-modal').style.display = 'none';
@@ -862,6 +866,9 @@ async function doModalRegister() {
   const nm    = document.getElementById('r-nm').value.trim();
   const err   = document.getElementById('r-err');
   if (!/^[a-z0-9_]{3,20}$/.test(un)) { err.textContent = '아이디는 영소문자/숫자/_로 3~20자'; return; }
+  err.textContent = '확인 중...';
+  const { count } = await db.from('profiles').select('*', { count: 'exact', head: true });
+  if (count > 0) { err.textContent = '이미 등록된 계정이 있습니다.'; return; }
   err.textContent = '처리 중...';
   const { data, error } = await db.auth.signUp({ email, password: pw });
   if (error) { err.textContent = error.message; return; }
