@@ -298,7 +298,7 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
 
 <div id="app"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.js"></script>
 <script>
 /* ── CONFIG ── */
 const SUPABASE_URL = 'https://juewbxriakymsyoamizl.supabase.co';
@@ -326,9 +326,17 @@ let currentUsername = null;
 /* ── INIT ── */
 async function init() {
   if (!DEMO) {
-    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data: { session } } = await db.auth.getSession();
-    if (session) { me = session.user; await loadMyProfile(); }
+    try {
+      db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } catch(e) {
+      document.getElementById('app').innerHTML =
+        `<div style="text-align:center;padding:40px;color:var(--muted)">Supabase 초기화 오류: ${e.message}</div>`;
+      updateNav(); return;
+    }
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) { me = session.user; await loadMyProfile(); }
+    } catch(e) { console.warn('getSession 오류:', e); }
     db.auth.onAuthStateChange(async (event, sess) => {
       me = sess?.user || null;
       if (me) {
@@ -420,18 +428,13 @@ async function renderListing(app) {
     return;
   }
   try {
-    // Use session access_token if available, else anon key
-    let authToken = SUPABASE_KEY;
+    // Build headers: apikey always, Authorization only if we have a real user JWT
+    const hdrs = { 'apikey': SUPABASE_KEY };
     if (db) {
       const { data: sd } = await db.auth.getSession();
-      if (sd?.session?.access_token) authToken = sd.session.access_token;
+      if (sd?.session?.access_token) hdrs['Authorization'] = `Bearer ${sd.session.access_token}`;
     }
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${authToken}`
-      }
-    });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, { headers: hdrs });
     if (!res.ok) {
       const txt = await res.text();
       app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류 (${res.status}): ${esc(txt.slice(0,300))}</div>`;
@@ -912,20 +915,22 @@ async function doProfileSetup() {
 }
 function toEmail(id) { return id.trim().toLowerCase() + '@danji.local'; }
 async function doModalLogin() {
-  if (DEMO) return;
+  if (DEMO || !db) { document.getElementById('m-err').textContent = 'DB 연결 안 됨'; return; }
   const err = document.getElementById('m-err');
   err.textContent = '로그인 중...';
   const idVal = document.getElementById('m-em').value.trim();
-  const { data, error } = await db.auth.signInWithPassword({
-    email: toEmail(idVal),
-    password: document.getElementById('m-pw').value
-  });
-  if (error) { err.textContent = '로그인 실패: ' + error.message; return; }
-  me = data.user;
-  closeModal();
-  await loadMyProfile();
-  updateNav();
-  go(myProfile ? '#/u/' + myProfile.username : '#/u/' + idVal.toLowerCase());
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email: toEmail(idVal),
+      password: document.getElementById('m-pw').value
+    });
+    if (error) { err.textContent = '로그인 실패: ' + error.message; return; }
+    me = data.user;
+    closeModal();
+    await loadMyProfile();
+    updateNav();
+    go(myProfile ? '#/u/' + myProfile.username : '#/u/' + idVal.toLowerCase());
+  } catch(e) { err.textContent = '오류: ' + e.message; }
 }
 async function doModalRegister() {
   if (DEMO) return;
