@@ -42,6 +42,24 @@ textarea{resize:vertical;}
 .nav-edit-btn{background:var(--p2);color:var(--red);border:1.5px solid var(--b1);font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.3px;}
 .nav-edit-btn:hover,.nav-edit-btn.on{background:var(--red);color:#fff;border-color:var(--red);}
 
+/* ── LOGIN MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(26,8,12,.45);z-index:900;backdrop-filter:blur(2px);}
+.modal-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:901;background:var(--panel);border:1.5px solid var(--b1);border-radius:14px;box-shadow:0 8px 40px rgba(232,37,58,.18);width:320px;overflow:hidden;}
+.modal-ph{background:linear-gradient(90deg,var(--red),#c01828);color:#fff;padding:12px 16px;font-size:13px;font-weight:700;letter-spacing:.5px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+.modal-close{background:none;color:#fff;font-size:16px;line-height:1;padding:0 2px;opacity:.7;}
+.modal-close:hover{opacity:1;}
+.modal-tabs{display:flex;border-bottom:1px solid var(--b1);}
+.modal-tab{flex:1;padding:8px;font-size:11px;font-weight:700;background:none;color:var(--muted);border-bottom:2.5px solid transparent;transition:all .15s;}
+.modal-tab.on{color:var(--red);border-bottom-color:var(--red);}
+.modal-body{padding:18px 16px;}
+.m-fg{margin-bottom:10px;}
+.m-fg label{display:block;color:var(--sub);font-size:10px;margin-bottom:4px;}
+.m-fg input{width:100%;padding:7px 10px;}
+.m-btn{width:100%;background:var(--red);color:#fff;font-size:12px;font-weight:700;padding:9px;border-radius:8px;margin-top:4px;}
+.m-btn:hover{background:#c01828;}
+.m-err{color:var(--red2);font-size:10px;margin-top:8px;text-align:center;min-height:16px;}
+.m-notice{background:var(--red3);border:1px solid var(--b2);border-left:3px solid var(--red);border-radius:6px;padding:7px 10px;font-size:10px;color:var(--sub);margin-bottom:10px;}
+
 /* ── LAYOUT ── */
 #app{padding:8px 12px;}
 #naru{display:grid;grid-template-columns:158px 1fr 180px;gap:9px;max-width:970px;margin:0 auto;align-items:start;}
@@ -204,6 +222,45 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
   </symbol>
 </svg>
 
+<!-- ── LOGIN MODAL ── -->
+<div id="login-modal" style="display:none">
+  <div class="modal-bg" onclick="closeModal()"></div>
+  <div class="modal-box">
+    <div class="modal-ph">
+      <span id="modal-title">
+        <svg class="rab" width="13" height="16" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg>
+        로그인
+      </span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab on" id="tab-login" onclick="switchTab('login')">로그인</button>
+      <button class="modal-tab" id="tab-reg" onclick="switchTab('reg')">회원가입</button>
+    </div>
+    <div class="modal-body">
+      <div id="m-notice" class="m-notice" style="display:none">Supabase 연결 후 사용 가능합니다.</div>
+
+      <!-- 로그인 폼 -->
+      <div id="form-login">
+        <div class="m-fg"><label>이메일</label><input id="m-em" type="email" placeholder="example@email.com"></div>
+        <div class="m-fg"><label>비밀번호</label><input id="m-pw" type="password" placeholder="비밀번호"></div>
+        <button class="m-btn" onclick="doModalLogin()">로그인</button>
+        <div class="m-err" id="m-err"></div>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <div id="form-reg" style="display:none">
+        <div class="m-fg"><label>이메일</label><input id="r-em" type="email" placeholder="example@email.com"></div>
+        <div class="m-fg"><label>비밀번호 (6자 이상)</label><input id="r-pw" type="password" placeholder="비밀번호"></div>
+        <div class="m-fg"><label>아이디 (영문/숫자/_)</label><input id="r-un" type="text" placeholder="my_id"></div>
+        <div class="m-fg"><label>표시 이름</label><input id="r-nm" type="text" placeholder="닉네임"></div>
+        <button class="m-btn" onclick="doModalRegister()">회원가입</button>
+        <div class="m-err" id="r-err"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── NAV ── -->
 <nav id="topnav">
   <div class="logo">
@@ -214,7 +271,7 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
   <span class="sp"></span>
   <span class="nav-cur" id="nav-user"></span>
   <button class="nav-edit-btn" id="nav-edit-btn" style="display:none" onclick="toggleEditMode()">✏ 수정 모드</button>
-  <a id="nav-login" href="#/login">로그인</a>
+  <a id="nav-login" href="#" onclick="openModal();return false">로그인</a>
   <a id="nav-logout" href="#" style="display:none" onclick="doLogout();return false">로그아웃</a>
 </nav>
 
@@ -737,61 +794,59 @@ function renderCal() {
 }
 function calNav(d) { calM+=d; if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal(); }
 
-/* ── AUTH PAGES ── */
-function renderLogin(app) {
-  currentUsername = null; updateNav();
-  app.innerHTML = `<div class="auth-pg">
-    <div class="auth-ph"><svg class="rab" width="14" height="18" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 로그인</div>
-    <div class="auth-body">
-      ${DEMO?'<div class="notice-box">Supabase 연결 후 사용 가능합니다.</div>':''}
-      <div class="fg"><label>이메일</label><input id="li-em" type="email" placeholder="example@email.com"></div>
-      <div class="fg"><label>비밀번호</label><input id="li-pw" type="password"></div>
-      <button class="btn-main" onclick="doLogin()">로그인</button>
-      <div id="li-err" class="err"></div>
-      <div class="auth-lnk"><a href="#/register">회원가입</a> · <a href="#/">돌아가기</a></div>
-    </div>
-  </div>`;
+/* ── MODAL ── */
+function openModal() {
+  const m = document.getElementById('login-modal');
+  const notice = document.getElementById('m-notice');
+  if (notice) notice.style.display = DEMO ? '' : 'none';
+  m.style.display = '';
+  switchTab('login');
 }
-async function doLogin() {
+function closeModal() {
+  document.getElementById('login-modal').style.display = 'none';
+  document.getElementById('m-err').textContent = '';
+  document.getElementById('r-err') && (document.getElementById('r-err').textContent = '');
+}
+function switchTab(t) {
+  document.getElementById('form-login').style.display = t === 'login' ? '' : 'none';
+  document.getElementById('form-reg').style.display  = t === 'reg'   ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('on', t === 'login');
+  document.getElementById('tab-reg').classList.toggle('on', t === 'reg');
+}
+async function doModalLogin() {
   if (DEMO) return;
+  const err = document.getElementById('m-err');
+  err.textContent = '로그인 중...';
   const { error } = await db.auth.signInWithPassword({
-    email: document.getElementById('li-em').value,
-    password: document.getElementById('li-pw').value
+    email: document.getElementById('m-em').value,
+    password: document.getElementById('m-pw').value
   });
-  if (error) document.getElementById('li-err').textContent = '로그인 실패: ' + error.message;
-  else go('#/');
+  if (error) { err.textContent = '로그인 실패: ' + error.message; return; }
+  closeModal();
+  if (myProfile) go('#/u/' + myProfile.username);
+  else route();
 }
-
-function renderRegister(app) {
-  currentUsername = null; updateNav();
-  app.innerHTML = `<div class="auth-pg">
-    <div class="auth-ph"><svg class="rab" width="14" height="18" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 회원가입</div>
-    <div class="auth-body">
-      ${DEMO?'<div class="notice-box">Supabase 연결 후 사용 가능합니다.</div>':''}
-      <div class="fg"><label>이메일</label><input id="re-em" type="email" placeholder="example@email.com"></div>
-      <div class="fg"><label>비밀번호 (6자 이상)</label><input id="re-pw" type="password"></div>
-      <div class="fg"><label>아이디 (영문/숫자/_)</label><input id="re-un" type="text" placeholder="my_id"></div>
-      <div class="fg"><label>표시 이름</label><input id="re-nm" type="text" placeholder="닉네임"></div>
-      <button class="btn-main" onclick="doRegister()">회원가입</button>
-      <div id="re-err" class="err"></div>
-      <div class="auth-lnk"><a href="#/login">로그인</a> · <a href="#/">돌아가기</a></div>
-    </div>
-  </div>`;
-}
-async function doRegister() {
+async function doModalRegister() {
   if (DEMO) return;
-  const email = document.getElementById('re-em').value;
-  const pw    = document.getElementById('re-pw').value;
-  const un    = document.getElementById('re-un').value.trim().toLowerCase();
-  const nm    = document.getElementById('re-nm').value.trim();
-  const err   = document.getElementById('re-err');
-  if (!/^[a-z0-9_]{3,20}$/.test(un)) { err.textContent = '아이디는 영소문자/숫자/_로 3~20자여야 합니다.'; return; }
+  const email = document.getElementById('r-em').value;
+  const pw    = document.getElementById('r-pw').value;
+  const un    = document.getElementById('r-un').value.trim().toLowerCase();
+  const nm    = document.getElementById('r-nm').value.trim();
+  const err   = document.getElementById('r-err');
+  if (!/^[a-z0-9_]{3,20}$/.test(un)) { err.textContent = '아이디는 영소문자/숫자/_로 3~20자'; return; }
+  err.textContent = '처리 중...';
   const { data, error } = await db.auth.signUp({ email, password: pw });
   if (error) { err.textContent = error.message; return; }
   const { error: pe } = await db.from('profiles').insert({ id: data.user.id, username: un, display_name: nm });
   if (pe) { err.textContent = '프로필 생성 실패: ' + pe.message; return; }
+  closeModal();
   go('#/u/' + un);
 }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ── AUTH PAGES (URL 직접 접근용) ── */
+function renderLogin(app) { openModal(); route(); }
+function renderRegister(app) { openModal(); switchTab('reg'); route(); }
 
 /* ============================================================
    SUPABASE SQL SCHEMA
