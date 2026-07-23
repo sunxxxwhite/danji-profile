@@ -329,7 +329,7 @@ async function init() {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const { data: { session } } = await db.auth.getSession();
     if (session) { me = session.user; await loadMyProfile(); }
-    db.auth.onAuthStateChange(async (_, sess) => {
+    db.auth.onAuthStateChange(async (event, sess) => {
       me = sess?.user || null;
       if (me) {
         await loadMyProfile();
@@ -340,7 +340,7 @@ async function init() {
           autoEditOnLoad = true;
         }
         updateNav();
-        if (myProfile) { go('#/u/' + myProfile.username); return; }
+        if (event === 'SIGNED_IN' && myProfile) { go('#/u/' + myProfile.username); return; }
       } else { myProfile = null; }
       updateNav();
     });
@@ -673,16 +673,17 @@ async function saveProfile() {
 
   const job = document.getElementById('e-job')?.value || myProfile.ff14_job || '';
   const oldLnk = myProfile.links || {};
+  const v = id => document.getElementById(id)?.value ?? '';
   const payload = {
-    display_name: document.getElementById('e-dname')?.value || '',
-    intro:        document.getElementById('e-intro')?.value || '',
+    display_name: v('e-btitle') || v('e-dname'),
+    intro:        v('e-intro'),
     avatar_url:   avatarUrl,
-    ff14_name:    document.getElementById('e-char')?.value || '',
-    ff14_server:  document.getElementById('e-srv')?.value || '',
+    ff14_name:    v('e-char'),
+    ff14_server:  v('e-srv'),
     ff14_job:     job,
-    ff14_level:   parseInt(document.getElementById('e-lv')?.value) || 100,
-    ff14_fc:      document.getElementById('e-fc')?.value || '',
-    links:        { ...oldLnk, bio: document.getElementById('e-bio')?.value || '', twitter: document.getElementById('e-tw')?.value || '' },
+    ff14_level:   parseInt(v('e-lv')) || 100,
+    ff14_fc:      v('e-fc'),
+    links:        { ...oldLnk, bio: v('e-bsub') || v('e-bio'), twitter: v('e-tw') },
     ff14_hours:   { wd: [...wdSet], ho: [...hoSet] },
     updated_at:   new Date().toISOString()
   };
