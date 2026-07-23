@@ -318,7 +318,7 @@ Object.entries(ROLES).forEach(([role, { jobs }]) => jobs.forEach(j => JOB_ROLE[j
 /* ── STATE ── */
 const DEMO = typeof supabase === 'undefined' || !SUPABASE_URL.includes('supabase');
 let db = null, me = null, myProfile = null;
-let editMode = false, pendingAvatarFile = null;
+let editMode = false, pendingAvatarFile = null, autoEditOnLoad = false;
 let wdSet = new Set(), hoSet = new Set();
 let clockTmr = null, calY, calM;
 let currentUsername = null;
@@ -333,7 +333,14 @@ async function init() {
       me = sess?.user || null;
       if (me) {
         await loadMyProfile();
-        if (!myProfile) await tryCreatePendingProfile();
+        if (!myProfile) {
+          const un = (me.email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g,'_').slice(0,20) || 'user';
+          await db.from('profiles').insert({ id: me.id, username: un, display_name: '' });
+          await loadMyProfile();
+          autoEditOnLoad = true;
+        }
+        updateNav();
+        if (myProfile) { go('#/u/' + myProfile.username); return; }
       } else { myProfile = null; }
       updateNav();
     });
@@ -422,7 +429,7 @@ async function renderListing(app) {
     </div>
     <div class="card-grid">
       ${items}
-      ${me && !myProfile ? `<div class="card-new" onclick="openProfileSetup()">
+      ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
         <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
         <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
       </div>` : ''}
@@ -639,6 +646,7 @@ async function renderProfile(app, username) {
   initHourBars();
   startClock();
   calY = undefined; calM = undefined; renderCal();
+  if (autoEditOnLoad) { autoEditOnLoad = false; toggleEditMode(); }
 }
 
 /* ── EDIT MODE TOGGLE ── */
