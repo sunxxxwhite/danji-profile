@@ -537,8 +537,6 @@ async function renderProfile(app, username) {
         <div class="b-sub" id="v-bsub">@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio) : ''}</div>
         <input class="b-sub-inp" id="e-bsub" value="${esc(p.bio||'')}" placeholder="한줄 소개">
         <div class="mog-wrap">
-          <div class="mog-ball"></div>
-          <div class="mog-stem"></div>
           <img class="mog-img" src="moogle.png" alt="" onerror="this.style.display='none'" width="96">
         </div>
         <span style="position:absolute;left:12px;bottom:8px;color:rgba(232,37,58,.18);font-size:22px;user-select:none;z-index:1">✦</span>
@@ -609,20 +607,23 @@ async function renderProfile(app, username) {
     <!-- RIGHT -->
     <div>
       <div class="panel">
-        <div class="ph"><span>🕐 현재 시각</span></div>
+        <div class="ph"><span><svg class="rab" width="10" height="13" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 현재 시각</span></div>
         <div class="clock-d" id="clock">00:00:00</div>
         <div class="date-d" id="clock-date"></div>
       </div>
       <div class="panel">
-        <div class="ph"><span>📅 달력</span></div>
+        <div class="ph"><span><svg class="rab" width="10" height="13" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 달력</span></div>
         <div class="cal" id="cal"></div>
       </div>
       <div class="panel">
-        <div class="ph"><span>🔗 프로필 링크</span></div>
+        <div class="ph"><span><svg class="rab" width="10" height="13" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 프로필 링크</span></div>
         <div class="url-box">
           <input class="url-inp" id="purl" value="${esc(purl)}" readonly>
           <button class="url-btn" onclick="copyUrl()">링크 복사 📋</button>
         </div>
+      </div>
+      <div style="border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(232,37,58,.08);margin-bottom:8px;">
+        <img src="moogle2.jpg" alt="" style="width:100%;display:block;">
       </div>
     </div>
 
