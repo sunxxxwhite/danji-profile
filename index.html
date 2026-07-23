@@ -261,29 +261,12 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
       </span>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-tabs">
-      <button class="modal-tab on" id="tab-login" onclick="switchTab('login')">로그인</button>
-      <button class="modal-tab" id="tab-reg" onclick="switchTab('reg')">회원가입</button>
-    </div>
     <div class="modal-body">
       <div id="m-notice" class="m-notice" style="display:none">Supabase 연결 후 사용 가능합니다.</div>
-
-      <!-- 로그인 폼 -->
-      <div id="form-login">
-        <div class="m-fg"><label>아이디</label><input id="m-em" type="text" placeholder="아이디"></div>
-        <div class="m-fg"><label>비밀번호</label><input id="m-pw" type="password" placeholder="비밀번호"></div>
-        <button class="m-btn" onclick="doModalLogin()">로그인</button>
-        <div class="m-err" id="m-err"></div>
-      </div>
-
-      <!-- 회원가입 폼 -->
-      <div id="form-reg" style="display:none">
-        <div class="m-fg"><label>아이디 (영문/숫자/_)</label><input id="r-un" type="text" placeholder="my_id"></div>
-        <div class="m-fg"><label>비밀번호 (6자 이상)</label><input id="r-pw" type="password" placeholder="비밀번호"></div>
-        <div class="m-fg"><label>표시 이름</label><input id="r-nm" type="text" placeholder="닉네임"></div>
-        <button class="m-btn" onclick="doModalRegister()">회원가입</button>
-        <div class="m-err" id="r-err"></div>
-      </div>
+      <div class="m-fg"><label>아이디</label><input id="m-em" type="text" placeholder="아이디"></div>
+      <div class="m-fg"><label>비밀번호</label><input id="m-pw" type="password" placeholder="비밀번호"></div>
+      <button class="m-btn" onclick="doModalLogin()">로그인</button>
+      <div class="m-err" id="m-err"></div>
     </div>
   </div>
 </div>
@@ -831,28 +814,16 @@ function renderCal() {
 function calNav(d) { calM+=d; if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal(); }
 
 /* ── MODAL ── */
-async function openModal() {
+function openModal() {
   const m = document.getElementById('login-modal');
   const notice = document.getElementById('m-notice');
   if (notice) notice.style.display = DEMO ? '' : 'none';
   m.style.display = '';
-  switchTab('login');
-  if (!DEMO) {
-    const { count } = await db.from('profiles').select('*', { count: 'exact', head: true });
-    const tabReg = document.getElementById('tab-reg');
-    if (tabReg) tabReg.style.display = count > 0 ? 'none' : '';
-  }
+  document.getElementById('m-em').focus();
 }
 function closeModal() {
   document.getElementById('login-modal').style.display = 'none';
   document.getElementById('m-err').textContent = '';
-  document.getElementById('r-err') && (document.getElementById('r-err').textContent = '');
-}
-function switchTab(t) {
-  document.getElementById('form-login').style.display = t === 'login' ? '' : 'none';
-  document.getElementById('form-reg').style.display  = t === 'reg'   ? '' : 'none';
-  document.getElementById('tab-login').classList.toggle('on', t === 'login');
-  document.getElementById('tab-reg').classList.toggle('on', t === 'reg');
 }
 function toEmail(id) { return id.trim().toLowerCase() + '@danji.local'; }
 async function doModalLogin() {
@@ -897,7 +868,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 /* ── AUTH PAGES (URL 직접 접근용) ── */
 function renderLogin(app) { openModal(); route(); }
-function renderRegister(app) { openModal(); switchTab('reg'); route(); }
 
 /* ============================================================
    SUPABASE SQL SCHEMA
