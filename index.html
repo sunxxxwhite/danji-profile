@@ -426,10 +426,8 @@ function route() {
   const h = location.hash || '#/';
   const app = document.getElementById('app');
   if (h === '#/' || h === '') {
-    // 루트: 프로필 페이지로 바로 리다이렉트
-    if (me && myProfile) { go('#/u/' + myProfile.username); return; }
-    const lastUn = localStorage.getItem('lastProfile') || 'danji';
-    go('#/u/' + lastUn); return;
+    const lastUn = (me && myProfile?.username) || localStorage.getItem('lastProfile') || 'danji';
+    renderProfile(app, lastUn); return;
   }
   else if (h === '#/login')          renderLogin(app);
   else if (h === '#/register')       { route(); openProfileSetup(); }
@@ -779,6 +777,7 @@ function showToast(msg) {
 
 /* ── SAVE ── */
 async function saveProfile() {
+  if (isSaving) return;
   if (DEMO) { alert('Supabase 연결 후 저장 가능합니다.'); return; }
   if (!me) { alert('로그인 후 저장 가능합니다.'); return; }
   if (!myProfile) {
@@ -840,7 +839,7 @@ async function saveProfile() {
     editMode = false;
     pendingAvatarFile = null;
     showToast('저장됐어요!');
-    renderProfile(document.getElementById('app'), myProfile.username);
+    await renderProfile(document.getElementById('app'), myProfile.username);
   } catch (e) {
     alert('저장 중 오류: ' + (e?.message || e));
   } finally {
