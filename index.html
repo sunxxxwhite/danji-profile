@@ -208,7 +208,35 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
 .err{color:var(--red2);font-size:11px;margin-top:8px;text-align:center;}
 .notice-box{background:var(--red3);border:1px solid var(--b2);border-left:3px solid var(--red);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--sub);margin-bottom:10px;}
 
-@media(max-width:700px){#naru{grid-template-columns:1fr;}}
+/* 태블릿: 왼쪽 축소 + 오른쪽 아래로 */
+@media(max-width:900px){
+  #naru{grid-template-columns:130px 1fr;}
+  #naru>div:last-child{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  #naru>div:last-child .panel{margin-bottom:0;}
+}
+/* 모바일: 중앙 먼저, 단일 컬럼 */
+@media(max-width:620px){
+  #app{padding:6px 8px;}
+  #naru{grid-template-columns:1fr;gap:0;}
+  #naru>div:nth-child(1){order:2;}
+  #naru>div:nth-child(2){order:1;}
+  #naru>div:nth-child(3){order:3;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+  #naru>div:nth-child(3) .panel{margin-bottom:0;}
+  /* 왼쪽 사이드바 가로형으로 */
+  .l-wrap{display:flex;align-items:center;gap:12px;padding:10px 12px;text-align:left;}
+  .l-av{width:58px;height:58px;margin:0;flex-shrink:0;}
+  .l-name{font-size:12px;}
+  .l-socials{justify-content:flex-start;}
+  .x-url-inp{margin-top:2px;}
+  /* 배너 */
+  .banner{min-height:80px;padding:12px 12px;}
+  .b-title{font-size:17px;letter-spacing:1px;}
+  .mog-wrap{right:8px;}
+  .mog-img{width:70px;}
+  /* 폼 */
+  .b-title-inp{width:70%;font-size:15px;}
+  .b-sub-inp{width:70%;}
+}
 </style>
 </head>
 <body>
