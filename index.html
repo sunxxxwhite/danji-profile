@@ -298,7 +298,7 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
 
 <div id="app"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ── CONFIG ── */
 const SUPABASE_URL = 'https://juewbxriakymsyoamizl.supabase.co';
@@ -420,20 +420,31 @@ async function renderListing(app) {
     return;
   }
   try {
-    const { data: list, error } = await db.from('profiles').select('*');
-    const dbg = `[DEMO:${DEMO} me:${me?.email||'none'} rows:${list?.length??'null'} err:${error?.message||'none'}]`;
-    if (error) {
-      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류: ${error.message}<br><small>${dbg}</small></div>`;
+    // Use session access_token if available, else anon key
+    let authToken = SUPABASE_KEY;
+    if (db) {
+      const { data: sd } = await db.auth.getSession();
+      if (sd?.session?.access_token) authToken = sd.session.access_token;
+    }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류 (${res.status}): ${esc(txt.slice(0,300))}</div>`;
       return;
     }
-    const items = (list || []).map(p => cardItem(p)).join('');
+    const list = await res.json();
+    const items = list.map(p => cardItem(p)).join('');
     app.innerHTML = `<div id="listing-pg">
       <div class="list-hdr">
         <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
         <span class="list-title">단지</span>
-        <span style="color:var(--muted);font-size:10px">(${(list||[]).length}명)</span>
+        <span style="color:var(--muted);font-size:10px">(${list.length}명)</span>
       </div>
-      <div style="font-size:10px;color:var(--muted);padding:4px 0">${dbg}</div>
       <div class="card-grid">
         ${items || '<div style="color:var(--muted);font-size:12px;padding:20px">프로필 없음</div>'}
         ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
@@ -443,7 +454,7 @@ async function renderListing(app) {
       </div>
     </div>`;
   } catch(e) {
-    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}<br>[DEMO:${DEMO} me:${me?.email||'none'} db:${!!db}]</div>`;
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`;
   }
 }
 
@@ -904,16 +915,17 @@ async function doModalLogin() {
   if (DEMO) return;
   const err = document.getElementById('m-err');
   err.textContent = '로그인 중...';
-  const idVal = document.getElementById('m-em').value;
+  const idVal = document.getElementById('m-em').value.trim();
   const { data, error } = await db.auth.signInWithPassword({
     email: toEmail(idVal),
     password: document.getElementById('m-pw').value
   });
   if (error) { err.textContent = '로그인 실패: ' + error.message; return; }
+  me = data.user;
   closeModal();
   await loadMyProfile();
-  if (myProfile) go('#/u/' + myProfile.username);
-  else go('#/u/' + idVal.trim().toLowerCase());
+  updateNav();
+  go(myProfile ? '#/u/' + myProfile.username : '#/u/' + idVal.toLowerCase());
 }
 async function doModalRegister() {
   if (DEMO) return;
