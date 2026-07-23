@@ -297,7 +297,6 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
 </nav>
 
 <div id="app"></div>
-<div id="_diag" style="position:fixed;bottom:0;left:0;right:0;background:#111;color:#0f0;font-size:11px;font-family:monospace;padding:5px 10px;z-index:99999;border-top:1px solid #333">진단 로딩 중...</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.js"></script>
 <script>
@@ -316,12 +315,8 @@ const ROLES = {
 const JOB_ROLE = {};
 Object.entries(ROLES).forEach(([role, { jobs }]) => jobs.forEach(j => JOB_ROLE[j] = role));
 
-/* ── DIAG ── */
-const $d = s => { const el = document.getElementById('_diag'); if(el) el.textContent = s; };
-
 /* ── STATE ── */
 const DEMO = typeof supabase === 'undefined' || !SUPABASE_URL.includes('supabase');
-$d('DEMO:' + DEMO + ' supabase_lib:' + typeof supabase);
 let db = null, me = null, myProfile = null;
 let editMode = false, pendingAvatarFile = null, autoEditOnLoad = false;
 let wdSet = new Set(), hoSet = new Set();
@@ -333,18 +328,15 @@ async function init() {
   if (!DEMO) {
     try {
       db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      $d('db:OK');
     } catch(e) {
-      $d('createClient 오류: ' + e.message);
       document.getElementById('app').innerHTML =
         `<div style="text-align:center;padding:40px;color:var(--muted)">Supabase 초기화 오류: ${e.message}</div>`;
       updateNav(); return;
     }
     try {
       const { data: { session } } = await db.auth.getSession();
-      $d('session:' + (session ? session.user.email : 'none'));
       if (session) { me = session.user; await loadMyProfile(); }
-    } catch(e) { $d('getSession 오류: ' + e.message); console.warn('getSession 오류:', e); }
+    } catch(e) { console.warn('getSession 오류:', e); }
     db.auth.onAuthStateChange(async (event, sess) => {
       me = sess?.user || null;
       if (me) {
@@ -436,15 +428,14 @@ async function renderListing(app) {
     return;
   }
   try {
-    // Try supabase-js first (authenticated users automatically use JWT)
+    // Try supabase-js (authenticated users use JWT automatically)
     let list = null;
     const { data: qdata, error: qerr } = await db.from('profiles').select('*');
-    $d('db: rows=' + (qdata?.length ?? 'null') + ' err=' + (qerr?.message || 'none'));
 
     if (!qerr && qdata && qdata.length > 0) {
       list = qdata;
-    } else if (qerr || !qdata || qdata.length === 0) {
-      // Fallback: raw fetch with only apikey (no Bearer for anon)
+    } else {
+      // Fallback: raw fetch with apikey only (for anon access)
       const hdrs = { 'apikey': SUPABASE_KEY };
       if (me) {
         const { data: sd } = await db.auth.getSession();
@@ -452,20 +443,15 @@ async function renderListing(app) {
       }
       try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, { headers: hdrs });
-        $d('fetch: ' + res.status);
         if (res.ok) {
           const fetched = await res.json();
-          $d('fetch: rows=' + fetched.length);
           if (fetched.length > 0) list = fetched;
         }
-      } catch(fe) { $d('fetch err: ' + fe.message); }
+      } catch(fe) { /* silent fallback */ }
     }
 
-    // Last resort: show own profile if logged in (guaranteed to exist)
-    if ((!list || list.length === 0) && myProfile) {
-      list = [myProfile];
-      $d('using myProfile fallback');
-    }
+    // Last resort: own profile guaranteed
+    if ((!list || list.length === 0) && myProfile) list = [myProfile];
 
     const items = (list || []).map(p => cardItem(p)).join('');
     app.innerHTML = `<div id="listing-pg">
@@ -483,7 +469,6 @@ async function renderListing(app) {
       </div>
     </div>`;
   } catch(e) {
-    $d('catch: ' + e.message);
     app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--txt)">오류: ${e.message}</div>`;
   }
 }
@@ -765,14 +750,8 @@ async function saveProfile() {
     };
 
     const { data: updRows, error } = await db.from('profiles').update(payload).eq('id', me.id).select();
-    if (error) {
-      alert('저장 실패 (DB오류):\n' + error.message + '\n코드: ' + (error.code||'?') + '\nmy id: ' + me.id);
-      return;
-    }
-    if (!updRows || updRows.length === 0) {
-      alert('저장 실패: 업데이트된 행 없음\n(me.id=' + me.id + ')\n프로필 ID가 계정 ID와 다를 수 있어요.\nSQL Editor에서 확인 필요합니다.');
-      return;
-    }
+    if (error) { alert('저장 실패: ' + error.message); return; }
+    if (!updRows || updRows.length === 0) { alert('저장 실패: 변경된 행이 없습니다.'); return; }
 
     myProfile = { ...myProfile, ...payload };
     editMode = false;
