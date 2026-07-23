@@ -446,7 +446,7 @@ function cardItem(p) {
     <div class="ci-av">${av}</div>
     <div class="ci-name">${esc(p.display_name || p.username)}</div>
     <div class="ci-id">@${esc(p.username)}</div>
-    ${p.bio ? `<div class="ci-bio">${esc(p.bio)}</div>` : ''}
+    ${(p.links?.bio) ? `<div class="ci-bio">${esc(p.links.bio)}</div>` : ''}
     ${p.ff14_job ? `<div class="ci-job"><span style="width:7px;height:7px;border-radius:50%;background:${role.color};display:inline-block"></span>${esc(p.ff14_job)}</div>` : ''}
   </div>`;
 }
@@ -466,12 +466,15 @@ async function renderProfile(app, username) {
     updateNav(); return;
   }
 
-  const r = ROLES[p.ff14_role] || ROLES.magic;
-  const actWd = p.activity_weekday || [];
-  const actHo = p.activity_holiday || [];
+  const lnk   = p.links || {};
+  const bioVal = lnk.bio || '';
+  const twVal  = lnk.twitter || '';
+  const actWd  = (p.ff14_hours?.wd) || [];
+  const actHo  = (p.ff14_hours?.ho) || [];
+  const r = ROLES[JOB_ROLE[p.ff14_job]] || ROLES.magic;
   const isOwn = !!(me && myProfile?.username === username);
   const purl = `${location.origin}${location.pathname}#/u/${username}`;
-  const xUrl = p.twitter && (p.twitter.startsWith('http') ? p.twitter : 'https://x.com/' + p.twitter);
+  const xUrl = twVal && (twVal.startsWith('http') ? twVal : 'https://x.com/' + twVal);
 
   wdSet = new Set(actWd);
   hoSet = new Set(actHo);
@@ -510,14 +513,14 @@ async function renderProfile(app, username) {
           <div class="l-name${p.display_name ? '' : ' empty'}" id="v-dname">${esc(p.display_name || '표시 이름')}</div>
           <input class="ei" id="e-dname" value="${esc(p.display_name||'')}" placeholder="표시 이름">
           <div class="l-id">@${esc(p.username)}</div>
-          <div class="l-bio${p.bio ? '' : ' empty'}" id="v-bio">${esc(p.bio || '한줄 소개')}</div>
-          <input class="ei" id="e-bio" value="${esc(p.bio||'')}" placeholder="한줄 소개">
+          <div class="l-bio${bioVal ? '' : ' empty'}" id="v-bio">${esc(bioVal || '한줄 소개')}</div>
+          <input class="ei" id="e-bio" value="${esc(bioVal)}" placeholder="한줄 소개">
           <div class="l-socials">
             ${xUrl
               ? `<a class="x-btn" href="${esc(xUrl)}" target="_blank" rel="noopener" title="X(트위터)"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.633zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>`
               : `<span class="x-btn" style="opacity:.35;cursor:default" title="X 미설정"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.258 5.633zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></span>`}
           </div>
-          <input class="ei x-url-inp" id="e-tw" value="${esc(p.twitter||'')}" placeholder="X 링크 (URL 또는 아이디)">
+          <input class="ei x-url-inp" id="e-tw" value="${esc(twVal)}" placeholder="X 링크 (URL 또는 아이디)">
         </div>
         <hr class="l-div">
         <nav class="l-nav">
@@ -534,8 +537,8 @@ async function renderProfile(app, username) {
       <div class="banner" style="margin-bottom:8px">
         <div class="b-title${p.display_name ? '' : ' empty'}" id="v-btitle">${esc(p.display_name || '표시 이름')}</div>
         <input class="b-title-inp" id="e-btitle" value="${esc(p.display_name||'')}" placeholder="표시 이름">
-        <div class="b-sub" id="v-bsub">@${esc(p.username)}${p.bio ? ' · ' + esc(p.bio) : ''}</div>
-        <input class="b-sub-inp" id="e-bsub" value="${esc(p.bio||'')}" placeholder="한줄 소개">
+        <div class="b-sub" id="v-bsub">@${esc(p.username)}${bioVal ? ' · ' + esc(bioVal) : ''}</div>
+        <input class="b-sub-inp" id="e-bsub" value="${esc(bioVal)}" placeholder="한줄 소개">
         <div class="mog-wrap">
           <img class="mog-img" src="moogle.png" alt="" onerror="this.style.display='none'" width="96">
         </div>
@@ -560,8 +563,8 @@ async function renderProfile(app, username) {
             <input class="ei lv-inp" id="e-lv" type="number" min="1" max="100" value="${p.ff14_level||100}" placeholder="레벨">
           </div>
           <div class="ffr"><span class="ffl">캐릭터</span>
-            <span class="ffv${p.ff14_char ? '' : ' empty'}" id="v-char">${esc(p.ff14_char || '—')}</span>
-            <input class="ei ffv-inp" id="e-char" value="${esc(p.ff14_char||'')}" placeholder="캐릭터명">
+            <span class="ffv${p.ff14_name ? '' : ' empty'}" id="v-char">${esc(p.ff14_name || '—')}</span>
+            <input class="ei ffv-inp" id="e-char" value="${esc(p.ff14_name||'')}" placeholder="캐릭터명">
           </div>
           <div class="ffr"><span class="ffl">서버</span>
             <span class="ffv${p.ff14_server ? '' : ' empty'}" id="v-srv">${esc(p.ff14_server || '—')}</span>
@@ -581,8 +584,8 @@ async function renderProfile(app, username) {
           <button class="esave" onclick="saveSection()">저장</button>
         </div>
         <div class="sc">
-          <div class="ev${p.hobbies ? '' : ' empty'}" id="v-intro">${p.hobbies ? esc(p.hobbies).replace(/\n/g,'<br>') : '자유롭게 작성해 주세요.'}</div>
-          <textarea class="ei" id="e-intro" placeholder="취미, 관심사 등 자유롭게 작성해 주세요.">${esc(p.hobbies||'')}</textarea>
+          <div class="ev${p.intro ? '' : ' empty'}" id="v-intro">${p.intro ? esc(p.intro).replace(/\n/g,'<br>') : '자유롭게 작성해 주세요.'}</div>
+          <textarea class="ei" id="e-intro" placeholder="취미, 관심사 등 자유롭게 작성해 주세요.">${esc(p.intro||'')}</textarea>
         </div>
       </div>
 
@@ -669,21 +672,18 @@ async function saveProfile() {
   }
 
   const job = document.getElementById('e-job')?.value || myProfile.ff14_job || '';
+  const oldLnk = myProfile.links || {};
   const payload = {
     display_name: document.getElementById('e-dname')?.value || '',
-    bio:          document.getElementById('e-bio')?.value || '',
-
-    hobbies:      document.getElementById('e-intro')?.value || '',
+    intro:        document.getElementById('e-intro')?.value || '',
     avatar_url:   avatarUrl,
-    ff14_char:    document.getElementById('e-char')?.value || '',
+    ff14_name:    document.getElementById('e-char')?.value || '',
     ff14_server:  document.getElementById('e-srv')?.value || '',
     ff14_job:     job,
-    ff14_role:    JOB_ROLE[job] || myProfile.ff14_role || 'magic',
     ff14_level:   parseInt(document.getElementById('e-lv')?.value) || 100,
     ff14_fc:      document.getElementById('e-fc')?.value || '',
-    twitter:      document.getElementById('e-tw')?.value || '',
-    activity_weekday: [...wdSet],
-    activity_holiday: [...hoSet],
+    links:        { ...oldLnk, bio: document.getElementById('e-bio')?.value || '', twitter: document.getElementById('e-tw')?.value || '' },
+    ff14_hours:   { wd: [...wdSet], ho: [...hoSet] },
     updated_at:   new Date().toISOString()
   };
 
