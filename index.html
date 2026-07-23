@@ -417,12 +417,14 @@ function go(h) { location.hash = h; }
 async function renderListing(app) {
   currentUsername = null; updateNav();
   if (DEMO) {
+    const demoDbg = `DEMO=true | supabase=${typeof supabase} | url="${SUPABASE_URL}"`;
     app.innerHTML = `<div id="listing-pg">
       <div class="list-hdr">
         <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
         <span class="list-title">단지</span>
-        <span style="color:var(--muted);font-size:10px">[ Supabase 연결 후 사용 가능 ]</span>
+        <span style="color:var(--muted);font-size:10px">[ DEMO 모드 ]</span>
       </div>
+      <div style="font-size:12px;color:var(--txt);padding:4px 0 6px;word-break:break-all">${demoDbg}</div>
       <div class="notice-box">Supabase URL과 KEY를 설정하면 프로필이 표시됩니다.</div>
     </div>`;
     return;
@@ -479,7 +481,7 @@ async function renderListing(app) {
         <span class="list-title">단지</span>
         <span style="color:var(--sub);font-size:10px">(${(list||[]).length}명)</span>
       </div>
-      <div style="font-size:9px;color:var(--sub);padding:0 0 4px;opacity:.5">${diag}</div>
+      <div id="list-diag" style="font-size:12px;color:var(--txt);padding:4px 0 6px;word-break:break-all">${diag}</div>
       <div class="card-grid">
         ${items || '<div style="color:var(--txt);font-size:12px;padding:20px;opacity:.5">프로필 없음</div>'}
         ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
