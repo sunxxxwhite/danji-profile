@@ -337,7 +337,10 @@ async function init() {
     if (session) { me = session.user; await loadMyProfile(); }
     db.auth.onAuthStateChange(async (_, sess) => {
       me = sess?.user || null;
-      if (me) await loadMyProfile(); else myProfile = null;
+      if (me) {
+        await loadMyProfile();
+        if (!myProfile) await tryCreatePendingProfile();
+      } else { myProfile = null; }
       updateNav();
     });
   }
@@ -348,6 +351,13 @@ async function loadMyProfile() {
   if (!db || !me) return;
   const { data } = await db.from('profiles').select('*').eq('id', me.id).single();
   myProfile = data;
+}
+async function tryCreatePendingProfile() {
+  const raw = localStorage.getItem('pendingProfile');
+  if (!raw || !me) return;
+  const { username, display_name } = JSON.parse(raw);
+  const { error } = await db.from('profiles').insert({ id: me.id, username, display_name });
+  if (!error) { localStorage.removeItem('pendingProfile'); await loadMyProfile(); }
 }
 
 function updateNav() {
@@ -872,6 +882,12 @@ async function doModalRegister() {
   err.textContent = '처리 중...';
   const { data, error } = await db.auth.signUp({ email, password: pw });
   if (error) { err.textContent = error.message; return; }
+  if (!data.session) {
+    localStorage.setItem('pendingProfile', JSON.stringify({ username: un, display_name: nm }));
+    err.style.color = 'var(--sub)';
+    err.textContent = '가입 완료! 이메일 확인 링크를 클릭한 후 이 페이지로 돌아와 로그인해 주세요.';
+    return;
+  }
   const { error: pe } = await db.from('profiles').insert({ id: data.user.id, username: un, display_name: nm });
   if (pe) { err.textContent = '프로필 생성 실패: ' + pe.message; return; }
   closeModal();
