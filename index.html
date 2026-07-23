@@ -601,9 +601,12 @@ async function renderProfile(app, username) {
         <div class="l-wrap">
           <div class="l-av" id="avWrap">
             ${avHtml}
-            <div class="l-av-ov" onclick="onAvClick()">
-              <svg class="rab" width="18" height="22" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg>
-              <span>사진 변경</span>
+            <div class="l-av-ov">
+              <div onclick="onAvClick()" style="display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:6px 0;flex:1;justify-content:center">
+                <svg class="rab" width="18" height="22" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg>
+                <span>사진 변경</span>
+              </div>
+              ${p.avatar_url ? `<div onclick="event.stopPropagation();deleteAvatar()" style="font-size:9px;color:rgba(255,255,255,.9);cursor:pointer;border-top:1px solid rgba(255,255,255,.3);padding:5px 0;width:100%;text-align:center">사진 삭제</div>` : ''}
             </div>
           </div>
           <input type="file" accept="image/*" id="av-file" style="display:none" onchange="onFileChange(event)">
