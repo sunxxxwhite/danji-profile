@@ -377,7 +377,6 @@ function updateNav() {
   }
   const isOwn = !!(me && myProfile && myProfile.username === currentUsername);
   nb.style.display = isOwn ? '' : 'none';
-  if (!isOwn && editMode) { editMode = false; }
   nb.textContent = editMode ? '✓ 저장하기' : '✏ 수정 모드';
   nb.classList.toggle('on', editMode);
 }
@@ -458,8 +457,12 @@ async function renderProfile(app, username) {
   if (DEMO) {
     p = null;
   } else {
-    const { data } = await db.from('profiles').select('*').eq('username', username).single();
+    const { data, error } = await db.from('profiles').select('*').eq('username', username).single();
     p = data;
+    if (error && error.code !== 'PGRST116') {
+      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">프로필 불러오기 실패: ${error.message}<br><a href="#/">← 목록으로</a></div>`;
+      updateNav(); return;
+    }
   }
   if (!p) {
     app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">프로필을 찾을 수 없습니다. <a href="#/">← 목록으로</a></div>`;
@@ -641,9 +644,9 @@ async function renderProfile(app, username) {
 }
 
 /* ── EDIT MODE TOGGLE ── */
-function toggleEditMode() {
+async function toggleEditMode() {
   if (editMode) {
-    saveProfile();
+    await saveProfile();
   } else {
     editMode = true;
     const pw = document.getElementById('pw');
@@ -659,42 +662,69 @@ function updateNavBtn() {
   nb.classList.toggle('on', editMode);
 }
 
+function showToast(msg) {
+  let t = document.getElementById('save-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'save-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;padding:10px 22px;border-radius:20px;font-size:14px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+
 /* ── SAVE ── */
 async function saveProfile() {
   if (DEMO) { alert('Supabase 연결 후 저장 가능합니다.'); return; }
-  if (!me || !myProfile) return;
-
-  // avatar: if file pending, upload first
-  let avatarUrl = document.getElementById('e-av')?.value || myProfile.avatar_url || '';
-  if (pendingAvatarFile && db) {
-    const up = await uploadAvatar(pendingAvatarFile);
-    if (up) avatarUrl = up;
+  if (!me) { alert('로그인 후 저장 가능합니다.'); return; }
+  if (!myProfile) {
+    alert('프로필 정보를 불러올 수 없습니다.\n새로고침 후 다시 로그인해주세요.');
+    return;
   }
 
-  const job = document.getElementById('e-job')?.value || myProfile.ff14_job || '';
-  const oldLnk = myProfile.links || {};
-  const v = id => document.getElementById(id)?.value ?? '';
-  const payload = {
-    display_name: v('e-btitle') || v('e-dname'),
-    intro:        v('e-intro'),
-    avatar_url:   avatarUrl,
-    ff14_name:    v('e-char'),
-    ff14_server:  v('e-srv'),
-    ff14_job:     job,
-    ff14_level:   parseInt(v('e-lv')) || 100,
-    ff14_fc:      v('e-fc'),
-    links:        { ...oldLnk, bio: v('e-bsub') || v('e-bio'), twitter: v('e-tw') },
-    ff14_hours:   { wd: [...wdSet], ho: [...hoSet] },
-    updated_at:   new Date().toISOString()
-  };
+  const nb = document.getElementById('nav-edit-btn');
+  if (nb) { nb.disabled = true; nb.textContent = '저장 중...'; }
 
-  const { error } = await db.from('profiles').update(payload).eq('id', me.id);
-  if (error) { alert('저장 실패: ' + error.message); return; }
+  try {
+    let avatarUrl = document.getElementById('e-av')?.value || myProfile.avatar_url || '';
+    if (pendingAvatarFile && db) {
+      const up = await uploadAvatar(pendingAvatarFile);
+      if (up) avatarUrl = up;
+    }
 
-  myProfile = { ...myProfile, ...payload };
-  editMode = false;
-  pendingAvatarFile = null;
-  renderProfile(document.getElementById('app'), myProfile.username);
+    const job = document.getElementById('e-job')?.value || myProfile.ff14_job || '';
+    const oldLnk = myProfile.links || {};
+    const v = id => document.getElementById(id)?.value ?? '';
+    const payload = {
+      display_name: v('e-btitle') || v('e-dname'),
+      intro:        v('e-intro'),
+      avatar_url:   avatarUrl,
+      ff14_name:    v('e-char'),
+      ff14_server:  v('e-srv'),
+      ff14_job:     job,
+      ff14_level:   parseInt(v('e-lv')) || null,
+      ff14_fc:      v('e-fc'),
+      links:        { ...oldLnk, bio: v('e-bsub') || v('e-bio'), twitter: v('e-tw') },
+      ff14_hours:   { wd: [...(wdSet || [])], ho: [...(hoSet || [])] },
+      updated_at:   new Date().toISOString()
+    };
+
+    const { error } = await db.from('profiles').update(payload).eq('id', me.id);
+    if (error) { alert('저장 실패: ' + error.message); return; }
+
+    myProfile = { ...myProfile, ...payload };
+    editMode = false;
+    pendingAvatarFile = null;
+    showToast('저장됐어요!');
+    renderProfile(document.getElementById('app'), myProfile.username);
+  } catch (e) {
+    alert('저장 중 오류: ' + (e?.message || e));
+  } finally {
+    if (nb) { nb.disabled = false; }
+  }
 }
 
 function saveSection() { saveProfile(); }
