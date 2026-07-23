@@ -405,7 +405,8 @@ function updateNav() {
 
 async function doLogout() {
   if (!DEMO) await db.auth.signOut();
-  me = null; myProfile = null; editMode = false; updateNav(); go('#/');
+  const lastUn = localStorage.getItem('lastProfile') || 'danji';
+  me = null; myProfile = null; editMode = false; updateNav(); go('#/u/' + lastUn);
 }
 
 /* ── ROUTER ── */
@@ -414,7 +415,12 @@ function route() {
   editMode = false; pendingAvatarFile = null;
   const h = location.hash || '#/';
   const app = document.getElementById('app');
-  if (h === '#/' || h === '')       renderListing(app).catch(e => { app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`; });
+  if (h === '#/' || h === '') {
+    // 루트: 프로필 페이지로 바로 리다이렉트
+    if (me && myProfile) { go('#/u/' + myProfile.username); return; }
+    const lastUn = localStorage.getItem('lastProfile') || 'danji';
+    go('#/u/' + lastUn); return;
+  }
   else if (h === '#/login')          renderLogin(app);
   else if (h === '#/register')       { route(); openProfileSetup(); }
   else if (h === '#/edit') {
