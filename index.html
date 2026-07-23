@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>단지의 프로필</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23070407' rx='12'/><text y='82' x='50' text-anchor='middle' font-size='72'>🐰</text></svg>">
+<style>
+/* ===== COLOR TOKENS ===== */
+:root {
+  --bg:       #070407;
+  --panel:    #0f060d;
+  --panel2:   #170b14;
+  --b1:       #4a000e;
+  --b2:       #880020;
+  --red:      #cc0020;
+  --red2:     #ff3355;
+  --gold:     #d4900a;
+  --gold2:    #f0b830;
+  --text:     #e0ccd2;
+  --sub:      #7a5060;
+  --link:     #ff7799;
+}
+
+/* ===== RESET ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { cursor: pointer; border: none; font-family: inherit; }
+input, textarea, select {
+  background: #1a0a14;
+  border: 1px solid var(--b2);
+  color: var(--text);
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--red2); }
+textarea { resize: vertical; }
+
+/* ===== BODY ===== */
+body {
+  background: var(--bg);
+  background-image: radial-gradient(circle, rgba(136,0,32,.2) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: var(--text);
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', sans-serif;
+  font-size: 12px;
+  min-height: 100vh;
+}
+
+/* ===== TOP NAV ===== */
+#topnav {
+  background: #090209;
+  border-bottom: 2px solid var(--b1);
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+#topnav .logo {
+  color: var(--red2);
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#topnav .logo span { color: var(--gold); }
+#topnav a { color: var(--sub); font-size: 11px; white-space: nowrap; }
+#topnav a:hover { color: var(--red2); text-decoration: none; }
+#topnav .sp { flex: 1; }
+#topnav .cur-user { color: var(--sub); font-size: 11px; }
+
+/* ===== APP ===== */
+#app { padding: 10px 12px; }
+
+/* ===== PANEL ===== */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--b1);
+  margin-bottom: 7px;
+}
+.panel:last-child { margin-bottom: 0; }
+.ph {
+  background: linear-gradient(90deg, var(--b1), #2a000a);
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--b2);
+}
+
+/* ===== 3-COLUMN LAYOUT ===== */
+#naru {
+  display: grid;
+  grid-template-columns: 155px 1fr 178px;
+  gap: 8px;
+  max-width: 950px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+/* ===== LEFT SIDEBAR ===== */
+.l-avatar-wrap { padding: 14px 10px; text-align: center; }
+.l-avatar {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 2px solid var(--red);
+  background: var(--panel2);
+  object-fit: cover;
+  margin: 0 auto 7px;
+  display: block;
+}
+.l-avatar-fallback {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  border: 2px solid var(--red);
+  background: var(--panel2);
+  margin: 0 auto 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px;
+}
+.l-name { color: var(--gold); font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+.l-sub  { color: var(--sub); font-size: 10px; line-height: 1.5; }
+.l-socials { display: flex; justify-content: center; gap: 10px; margin-top: 8px; }
+.l-socials a { color: var(--sub); font-size: 14px; }
+.l-socials a:hover { color: var(--red2); text-decoration: none; }
+.l-div { border: none; border-top: 1px solid var(--b1); margin: 6px 0; }
+.l-nav a {
+  display: block; padding: 5px 10px;
+  color: var(--text); font-size: 11px;
+  border-left: 2px solid transparent;
+  transition: all .12s;
+}
+.l-nav a:hover {
+  color: var(--red2); border-left-color: var(--red);
+  background: var(--panel2); text-decoration: none;
+}
+
+/* ===== CENTER BANNER ===== */
+.banner {
+  background: linear-gradient(135deg, #1c0012 0%, #0d0007 55%, #280008 100%);
+  border: 1px solid var(--b2);
+  padding: 16px 14px;
+  position: relative; min-height: 86px;
+  margin-bottom: 7px; overflow: hidden;
+}
+.banner::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(-45deg, rgba(136,0,32,.06) 0px, rgba(136,0,32,.06) 1px, transparent 1px, transparent 8px);
+  pointer-events: none;
+}
+.banner-title {
+  position: relative; color: var(--gold2);
+  font-size: 20px; font-weight: bold;
+  letter-spacing: 3px; margin-bottom: 4px;
+  text-shadow: 0 0 16px rgba(212,144,10,.55);
+}
+.banner-sub { position: relative; color: var(--sub); font-size: 10px; letter-spacing: 1px; }
+.banner-mog {
+  position: absolute; right: 12px; bottom: 0;
+  height: 76px; opacity: .9; mix-blend-mode: screen;
+}
+
+/* ===== FF14 CARD ===== */
+.ff14-wrap { padding: 10px 12px; }
+.job-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel2); border: 1px solid var(--b2);
+  padding: 4px 10px; margin-bottom: 8px; font-size: 11px;
+}
+.job-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.lv-badge { background: var(--b1); color: var(--gold); font-size: 10px; font-weight: bold; padding: 1px 7px; margin-left: 6px; }
+.ff-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+.ff-lbl { color: var(--sub); font-size: 10px; min-width: 52px; flex-shrink: 0; padding-top: 1px; }
+.ff-val { color: var(--text); font-size: 11px; }
+
+/* ===== ACTIVITY HOURS ===== */
+.hour-title { color: var(--sub); font-size: 10px; margin-top: 10px; margin-bottom: 4px; }
+.hour-grid { display: flex; gap: 2px; }
+.hbar { flex: 1; height: 16px; background: var(--panel2); border: 1px solid #25001a; }
+.hbar.on { background: var(--red); border-color: var(--red2); }
+.hour-scale { display: flex; justify-content: space-between; margin-top: 2px; color: var(--sub); font-size: 9px; }
+
+/* ===== TAGS ===== */
+.tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tag { background: #1e0810; border: 1px solid var(--b2); color: var(--text); font-size: 10px; padding: 2px 8px; }
+
+/* ===== SECTION CONTENT ===== */
+.sc { padding: 10px 12px; line-height: 1.7; font-size: 11px; }
+.info-row { display: flex; margin-bottom: 5px; gap: 8px; }
+.info-lbl { color: var(--sub); font-size: 10px; min-width: 55px; flex-shrink: 0; padding-top: 1px; }
+.info-val { color: var(--text); font-size: 11px; line-height: 1.6; }
+.mbti-badge { background: var(--red); color: #fff; font-size: 11px; font-weight: bold; padding: 1px 9px; letter-spacing: 1px; }
+
+/* ===== RIGHT SIDEBAR ===== */
+.clock-disp {
+  text-align: center; font-size: 22px;
+  font-family: 'Courier New', monospace;
+  color: var(--red2); letter-spacing: 2px;
+  padding: 12px 8px 4px;
+  text-shadow: 0 0 10px rgba(204,0,32,.5);
+  font-variant-numeric: tabular-nums;
+}
+.date-disp { text-align: center; color: var(--sub); font-size: 10px; padding-bottom: 10px; }
+
+.cal { padding: 8px; }
+.cal-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.cal-mon { color: var(--gold); font-size: 11px; font-weight: bold; }
+.cal-btn { background: var(--b1); color: var(--gold); width: 16px; height: 16px; font-size: 9px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; }
+.cal-btn:hover { background: var(--red); }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 1px; }
+.cal-dh { text-align: center; font-size: 9px; color: var(--sub); padding: 2px 0; }
+.cal-d  { text-align: center; font-size: 10px; padding: 2px 1px; color: var(--text); }
+.cal-d.other { color: #351525; }
+.cal-d.today { background: var(--red); color: #fff; font-weight: bold; }
+.cal-d.sun { color: var(--red2); }
+.cal-d.sat { color: #6688cc; }
+
+.url-copy { padding: 8px; }
+.url-copy input { width: 100%; margin-bottom: 5px; font-size: 10px; }
+.url-copy button { width: 100%; background: var(--b1); color: var(--gold); font-size: 11px; padding: 5px; border: 1px solid var(--b2); transition: background .15s; }
+.url-copy button:hover { background: var(--red); color: #fff; }
+
+.upd-log { padding: 8px 10px; }
+.upd-item { border-bottom: 1px dotted var(--b1); padding: 4px 0; }
+.upd-item:last-child { border-bottom: none; }
+.upd-date { color: var(--sub); font-size: 9px; }
+.upd-text { color: var(--text); font-size: 10px; }
+
+/* ===== LISTING PAGE ===== */
+#listing-pg { max-width: 950px; margin: 0 auto; }
+.list-hdr { border-bottom: 1px solid var(--b1); padding: 10px 0; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+.list-title { color: var(--gold); font-size: 17px; font-weight: bold; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 8px; }
+.card-item { background: var(--panel); border: 1px solid var(--b1); padding: 14px; text-align: center; cursor: pointer; transition: border-color .15s; }
+.card-item:hover { border-color: var(--b2); }
+.ci-av { width: 58px; height: 58px; border-radius: 50%; border: 2px solid var(--red); background: var(--panel2); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 26px; overflow: hidden; }
+.ci-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.ci-name { color: var(--gold); font-size: 12px; font-weight: bold; }
+.ci-sub  { color: var(--sub); font-size: 10px; margin-top: 2px; }
+.ci-bio  { color: var(--sub); font-size: 10px; margin-top: 5px; line-height: 1.5; }
+.ci-job  { display: inline-block; background: var(--panel2); border: 1px solid var(--b2); color: var(--text); font-size: 10px; padding: 2px 8px; margin-top: 5px; }
+.card-new { background: var(--panel); border: 1px dashed var(--b2); padding: 14px; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; min-height: 140px; }
+.card-new:hover { border-color: var(--red2); }
+
+/* ===== AUTH PAGES ===== */
+.auth-pg { max-width: 360px; margin: 36px auto; background: var(--panel); border: 1px solid var(--b2); }
+.auth-ph { background: var(--b1); color: var(--gold); padding: 8px 12px; font-size: 13px; font-weight: bold; letter-spacing: 1px; }
+.auth-body { padding: 20px; }
+.fg { margin-bottom: 12px; }
+.fg label { display: block; color: var(--sub); font-size: 11px; margin-bottom: 4px; }
+.fg input { width: 100%; padding: 6px 10px; }
+.btn-s { width: 100%; background: var(--red); color: #fff; font-size: 12px; padding: 8px; border: 1px solid var(--red2); cursor: pointer; letter-spacing: 1px; }
+.btn-s:hover { background: #aa0018; }
+.auth-lnk { margin-top: 10px; color: var(--sub); font-size: 11px; text-align: center; }
+.err { color: var(--red2); font-size: 11px; margin-top: 8px; text-align: center; }
+
+/* ===== EDIT PAGE ===== */
+.edit-pg { max-width: 640px; margin: 14px auto; }
+.edit-body { padding: 12px; }
+.edit-row { margin-bottom: 10px; }
+.edit-row label { display: block; color: var(--sub); font-size: 11px; margin-bottom: 4px; }
+.edit-row input, .edit-row textarea, .edit-row select { width: 100%; }
+.edit-row textarea { min-height: 72px; }
+.edit-actions { padding: 12px; display: flex; gap: 8px; }
+.btn-save { background: var(--red); color: #fff; font-size: 12px; padding: 6px 20px; border: 1px solid var(--red2); cursor: pointer; }
+.btn-save:hover { background: #aa0018; }
+.btn-cancel { background: var(--panel2); color: var(--text); font-size: 12px; padding: 6px 20px; border: 1px solid var(--b1); cursor: pointer; }
+.btn-cancel:hover { background: var(--b1); }
+
+.hp { display: flex; gap: 3px; flex-wrap: wrap; }
+.hbtn { width: 22px; height: 22px; background: var(--panel2); border: 1px solid var(--b1); color: var(--sub); font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .1s; }
+.hbtn.on { background: var(--red); border-color: var(--red2); color: #fff; }
+
+.notice { background: #1a0008; border: 1px solid var(--b2); border-left: 3px solid var(--red); padding: 6px 10px; font-size: 11px; color: var(--text); margin-bottom: 8px; }
+
+@media (max-width: 700px) { #naru { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav id="topnav">
+  <div class="logo">🐰 <span>단지의 프로필</span></div>
+  <a href="#/">전체 프로필</a>
+  <span class="sp"></span>
+  <span class="cur-user" id="nav-user"></span>
+  <a id="nav-login"  href="#/login">로그인</a>
+  <a id="nav-edit"   href="#/edit"  style="display:none">내 프로필 수정</a>
+  <a id="nav-logout" href="#"       style="display:none" onclick="doLogout();return false">로그아웃</a>
+</nav>
+
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+/* ============================================================
+   CONFIG  —  Supabase 연결 시 아래 두 값을 교체하세요
+   ============================================================ */
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+/* ============================================================
+   DEMO DATA
+   ============================================================ */
+const DEMO_DATA = [
+  {
+    username: 'misaya', display_name: '미사야',
+    bio: '오늘도 에오르제아에서 모험 중 🍄',
+    about_me: '안녕하세요! 저는 미사야입니다.\n일상과 FF14를 즐기는 평범한 모험가예요.\n궁금한 게 있으면 편하게 연락 주세요!',
+    mbti: 'INFJ', blood_type: 'A',
+    likes: '카페, 게임, 고양이, 조용한 음악',
+    dislikes: '시끄러운 곳, 갑작스러운 약속 변경',
+    hobbies: 'FF14, 그림 그리기, 카페 투어',
+    ff14_char: '미사야 에델바이스', ff14_server: '모그리',
+    ff14_job: '소환사', ff14_level: 100, ff14_fc: '에오르제아의 친구들', ff14_role: 'magic',
+    twitter: 'misaya_ff', discord: 'misaya#0001',
+    activity_weekday: [21,22,23], activity_holiday: [14,15,16,17,21,22,23],
+    tags: ['게임','힐세계관','소환사'],
+    created_at: '2026-01-15T00:00:00Z', updated_at: '2026-07-20T00:00:00Z'
+  },
+  {
+    username: 'aidric', display_name: '에이드릭',
+    bio: '빛의 전사 & 나이트 주력',
+    about_me: '에오르제아를 지키는 나이트입니다.\n탱킹을 좋아하고 공대 활동을 즐겨요!',
+    mbti: 'ENTJ', blood_type: 'B',
+    likes: '던전 공략, 전략 게임, 커피',
+    dislikes: '무계획 플레이, 비매너',
+    hobbies: 'FF14 고난이도 공략, 보드게임',
+    ff14_char: '에이드릭 오스마', ff14_server: '모그리',
+    ff14_job: '나이트', ff14_level: 100, ff14_fc: '에오르제아의 친구들', ff14_role: 'tank',
+    twitter: '', discord: 'aidric#9999',
+    activity_weekday: [21,22,23], activity_holiday: [15,16,20,21,22,23],
+    tags: ['탱커','고공략'],
+    created_at: '2026-01-15T00:00:00Z', updated_at: '2026-07-21T00:00:00Z'
+  }
+];
+
+/* ============================================================
+   FF14 DATA
+   ============================================================ */
+const ROLES = {
+  tank:   { label: '탱커',  color: '#4488cc', jobs: ['나이트','전사','암흑기사','건브레이커'] },
+  healer: { label: '힐러',  color: '#44cc88', jobs: ['백마도사','학자','점성술사','현자'] },
+  melee:  { label: '근딜',  color: '#cc4444', jobs: ['용기사','닌자','몽크','사무라이','리퍼'] },
+  ranged: { label: '원딜',  color: '#cc8844', jobs: ['음유시인','기공사','무도사'] },
+  magic:  { label: '마딜',  color: '#9944cc', jobs: ['흑마도사','소환사','적마도사','픽토맨서'] }
+};
+const ALL_JOBS = Object.values(ROLES).flatMap(r => r.jobs);
+const MBTI = ['INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP','ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP'];
+
+/* ============================================================
+   INIT
+   ============================================================ */
+const DEMO = (typeof supabase === 'undefined') || !SUPABASE_URL.includes('supabase');
+let db = null, me = null, myProfile = null;
+
+async function init() {
+  if (!DEMO) {
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: { session } } = await db.auth.getSession();
+    if (session) { me = session.user; await loadMyProfile(); }
+    db.auth.onAuthStateChange(async (_, sess) => {
+      me = sess?.user || null;
+      if (me) await loadMyProfile(); else myProfile = null;
+      updateNav();
+    });
+  }
+  updateNav(); route();
+}
+
+async function loadMyProfile() {
+  if (!db || !me) return;
+  const { data } = await db.from('profiles').select('*').eq('id', me.id).single();
+  myProfile = data;
+}
+
+function updateNav() {
+  const nu = document.getElementById('nav-user');
+  const nl = document.getElementById('nav-login');
+  const ne = document.getElementById('nav-edit');
+  const nlo = document.getElementById('nav-logout');
+  if (me) {
+    nu.textContent = myProfile?.display_name || me.email || '';
+    nl.style.display = 'none'; ne.style.display = ''; nlo.style.display = '';
+  } else {
+    nu.textContent = DEMO ? '[ 데모 ]' : '';
+    nl.style.display = ''; ne.style.display = 'none'; nlo.style.display = 'none';
+  }
+}
+
+async function doLogout() {
+  if (!DEMO) await db.auth.signOut();
+  me = null; myProfile = null; updateNav(); go('#/');
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+function route() {
+  stopClock();
+  const h = location.hash || '#/';
+  const app = document.getElementById('app');
+  if (h === '#/' || h === '')          renderListing(app);
+  else if (h === '#/login')            renderLogin(app);
+  else if (h === '#/register')         renderRegister(app);
+  else if (h === '#/edit')             renderEdit(app);
+  else if (h.startsWith('#/u/'))       renderProfile(app, h.slice(4));
+  else app.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">페이지를 찾을 수 없습니다. <a href="#/">← 목록으로</a></div>';
+}
+
+window.addEventListener('hashchange', route);
+function go(h) { location.hash = h; }
+
+/* ============================================================
+   LISTING
+   ============================================================ */
+async function renderListing(app) {
+  let list = DEMO ? DEMO_DATA : ((await db.from('profiles').select('*').order('created_at')).data || []);
+  app.innerHTML = `
+    <div id="listing-pg">
+      <div class="list-hdr">
+        <span style="font-size:24px">🐰</span>
+        <span class="list-title">단지의 프로필</span>
+        ${DEMO ? '<span style="color:var(--sub);font-size:10px">[ 데모 모드 ]</span>' : ''}
+      </div>
+      <div class="card-grid">
+        ${list.map(p => cardItem(p)).join('')}
+        ${me ? `<div class="card-new" onclick="go('#/edit')">
+          <div style="font-size:28px;color:var(--b2)">＋</div>
+          <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
+        </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function cardItem(p) {
+  const r = ROLES[p.ff14_role] || ROLES.magic;
+  return `<div class="card-item" onclick="go('#/u/${p.username}')">
+    <div class="ci-av">${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="" onerror="this.parentElement.textContent='🐰'">` : '🐰'}</div>
+    <div class="ci-name">${esc(p.display_name || p.username)}</div>
+    <div class="ci-sub">@${esc(p.username)}</div>
+    ${p.bio ? `<div class="ci-bio">${esc(p.bio)}</div>` : ''}
+    ${p.ff14_job ? `<div class="ci-job"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${r.color};margin-right:4px;vertical-align:middle"></span>${esc(p.ff14_job)}</div>` : ''}
+  </div>`;
+}
+
+/* ============================================================
+   PROFILE PAGE
+   ============================================================ */
+let clockTmr = null;
+function stopClock() { if (clockTmr) { clearInterval(clockTmr); clockTmr = null; } }
+let calY, calM;
+
+async function renderProfile(app, username) {
+  let p = DEMO
+    ? DEMO_DATA.find(x => x.username === username)
+    : ((await db.from('profiles').select('*').eq('username', username).single()).data);
+
+  if (!p) {
+    app.innerHTML = '<div style="text-align:center;padding:40px;color:var(--sub)">프로필을 찾을 수 없습니다. <a href="#/">← 목록으로</a></div>';
+    return;
+  }
+
+  const r     = ROLES[p.ff14_role] || ROLES.magic;
+  const actWd = p.activity_weekday || [];
+  const actHo = p.activity_holiday || [];
+  const tags  = p.tags || [];
+  const isOwn = myProfile?.username === username;
+  const purl  = `${location.origin}${location.pathname}#/u/${username}`;
+  const updD  = p.updated_at ? new Date(p.updated_at).toLocaleDateString('ko-KR') : '';
+  const crtD  = p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : '';
+
+  function hourBars(hrs) {
+    return `<div class="hour-grid">${Array.from({length:24},(_,i)=>`<div class="hbar${hrs.includes(i)?' on':''}" title="${i}시"></div>`).join('')}</div>
+            <div class="hour-scale"><span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>24시</span></div>`;
+  }
+
+  app.innerHTML = `
+  <div id="naru">
+    <!-- LEFT -->
+    <div>
+      <div class="panel">
+        <div class="l-avatar-wrap">
+          ${p.avatar_url
+            ? `<img class="l-avatar" src="${esc(p.avatar_url)}" alt="" onerror="this.outerHTML='<div class=\\'l-avatar-fallback\\'>🐰</div>'">`
+            : '<div class="l-avatar-fallback">🐰</div>'}
+          <div class="l-name">${esc(p.display_name || p.username)}</div>
+          <div class="l-sub">@${esc(p.username)}</div>
+          ${p.ff14_char ? `<div class="l-sub" style="margin-top:3px">${esc(p.ff14_char)}<br>${esc(p.ff14_server||'')} 서버</div>` : ''}
+          ${(p.twitter||p.discord) ? `<div class="l-socials">
+            ${p.twitter ? `<a href="https://x.com/${esc(p.twitter)}" target="_blank" rel="noopener" title="X">✦</a>` : ''}
+            ${p.discord ? `<span title="Discord: ${esc(p.discord)}" style="color:var(--sub);font-size:14px;cursor:help">◈</span>` : ''}
+          </div>` : ''}
+        </div>
+        <hr class="l-div">
+        <nav class="l-nav">
+          <a href="javascript:void(0)" onclick="ss('naru-ff14')">⚔ FF14 프로필</a>
+          <a href="javascript:void(0)" onclick="ss('naru-about')">✦ 자기소개</a>
+          <a href="javascript:void(0)" onclick="ss('naru-info')">◆ 개인 정보</a>
+          ${(actWd.length||actHo.length)?`<a href="javascript:void(0)" onclick="ss('naru-act')">◉ 활동 시간</a>`:''}
+          ${isOwn ? `<a href="#/edit">✏ 수정하기</a>` : ''}
+          <a href="#/">← 전체 목록</a>
+        </nav>
+      </div>
+      ${p.mbti ? `<div class="panel"><div class="ph">[ MBTI ]</div><div style="text-align:center;padding:10px"><span class="mbti-badge">${esc(p.mbti)}</span></div></div>` : ''}
+    </div>
+
+    <!-- CENTER -->
+    <div>
+      <div class="banner">
+        <div class="banner-title">${esc(p.display_name || p.username)}</div>
+        <div class="banner-sub">@${esc(p.username)}&nbsp;·&nbsp;${esc(p.bio||'')}</div>
+        <img class="banner-mog" src="moogle.png" alt="" onerror="this.style.display='none'">
+      </div>
+
+      <div class="panel" id="naru-ff14">
+        <div class="ph">[ ⚔ FF14 프로필 ]</div>
+        <div class="ff14-wrap">
+          <div>
+            <span class="job-badge">
+              <span class="job-dot" style="background:${r.color}"></span>
+              <strong>${esc(p.ff14_job||'미설정')}</strong>
+              <span style="color:var(--sub);font-size:10px">${r.label}</span>
+            </span>
+            ${p.ff14_level ? `<span class="lv-badge">Lv.${p.ff14_level}</span>` : ''}
+          </div>
+          ${p.ff14_char   ? `<div class="ff-row"><span class="ff-lbl">캐릭터</span><span class="ff-val">${esc(p.ff14_char)}</span></div>` : ''}
+          ${p.ff14_server ? `<div class="ff-row"><span class="ff-lbl">서버</span><span class="ff-val">${esc(p.ff14_server)} 서버</span></div>` : ''}
+          ${p.ff14_fc     ? `<div class="ff-row"><span class="ff-lbl">자유부대</span><span class="ff-val">${esc(p.ff14_fc)}</span></div>` : ''}
+        </div>
+      </div>
+
+      ${p.about_me ? `<div class="panel" id="naru-about"><div class="ph">[ ✦ 자기소개 ]</div><div class="sc">${esc(p.about_me).replace(/\n/g,'<br>')}</div></div>` : ''}
+
+      <div class="panel" id="naru-info">
+        <div class="ph">[ ◆ 개인 정보 ]</div>
+        <div class="sc">
+          ${p.mbti       ? `<div class="info-row"><span class="info-lbl">MBTI</span><span class="info-val"><span class="mbti-badge">${esc(p.mbti)}</span></span></div>` : ''}
+          ${p.blood_type ? `<div class="info-row"><span class="info-lbl">혈액형</span><span class="info-val">${esc(p.blood_type)}형</span></div>` : ''}
+          ${p.likes      ? `<div class="info-row"><span class="info-lbl">좋아하는 것</span><span class="info-val">${esc(p.likes)}</span></div>` : ''}
+          ${p.dislikes   ? `<div class="info-row"><span class="info-lbl">싫어하는 것</span><span class="info-val">${esc(p.dislikes)}</span></div>` : ''}
+          ${p.hobbies    ? `<div class="info-row"><span class="info-lbl">취미</span><span class="info-val">${esc(p.hobbies)}</span></div>` : ''}
+          ${tags.length  ? `<div class="info-row"><span class="info-lbl">태그</span><div class="tag-list">${tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div></div>` : ''}
+        </div>
+      </div>
+
+      ${(actWd.length||actHo.length) ? `<div class="panel" id="naru-act">
+        <div class="ph">[ ◉ 활동 시간 ]</div>
+        <div class="sc">
+          <div class="hour-title">평일</div>${hourBars(actWd)}
+          <div class="hour-title" style="margin-top:10px">주말/공휴일</div>${hourBars(actHo)}
+        </div>
+      </div>` : ''}
+    </div>
+
+    <!-- RIGHT -->
+    <div>
+      <div class="panel">
+        <div class="ph">[ 현재 시각 ]</div>
+        <div class="clock-disp" id="clock">00:00:00</div>
+        <div class="date-disp" id="clock-date"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">[ 달력 ]</div>
+        <div class="cal" id="cal"></div>
+      </div>
+      <div class="panel">
+        <div class="ph">[ 프로필 링크 ]</div>
+        <div class="url-copy">
+          <input id="purl" type="text" value="${esc(purl)}" readonly>
+          <button onclick="copyUrl()">링크 복사 📋</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph">[ 업데이트 ]</div>
+        <div class="upd-log">
+          ${updD ? `<div class="upd-item"><div class="upd-date">${updD}</div><div class="upd-text">프로필 업데이트</div></div>` : ''}
+          ${crtD ? `<div class="upd-item"><div class="upd-date">${crtD}</div><div class="upd-text">프로필 개설</div></div>` : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  startClock(); calY = undefined; calM = undefined; renderCal();
+}
+
+function ss(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function copyUrl() {
+  const inp = document.getElementById('purl');
+  if (!inp) return;
+  navigator.clipboard.writeText(inp.value).then(() => {
+    const btn = inp.nextElementSibling;
+    if (!btn) return;
+    btn.textContent = '복사됨 ✓';
+    setTimeout(() => btn.textContent = '링크 복사 📋', 1600);
+  });
+}
+
+function startClock() {
+  const days = ['일','월','화','수','목','금','토'];
+  function tick() {
+    const n = new Date();
+    const el = document.getElementById('clock');
+    if (!el) { stopClock(); return; }
+    el.textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+    const de = document.getElementById('clock-date');
+    if (de) de.textContent = `${n.getFullYear()}.${pad(n.getMonth()+1)}.${pad(n.getDate())} (${days[n.getDay()]})`;
+  }
+  tick(); clockTmr = setInterval(tick, 1000);
+}
+
+function renderCal() {
+  const now = new Date();
+  if (calY === undefined) calY = now.getFullYear();
+  if (calM === undefined) calM = now.getMonth();
+  const ty = now.getFullYear(), tm = now.getMonth(), td = now.getDate();
+  const cal = document.getElementById('cal'); if (!cal) return;
+  const fd = new Date(calY, calM, 1).getDay();
+  const ld = new Date(calY, calM+1, 0).getDate();
+  const pld = new Date(calY, calM, 0).getDate();
+  const MN = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  let cells = ['일','월','화','수','목','금','토'].map((d,i)=>`<div class="cal-dh" style="${i===0?'color:var(--red2)':i===6?'color:#6688cc':''}">${d}</div>`).join('');
+  for (let i=fd-1;i>=0;i--) cells+=`<div class="cal-d other">${pld-i}</div>`;
+  for (let d=1;d<=ld;d++) {
+    const isT=calY===ty&&calM===tm&&d===td;
+    const dw=new Date(calY,calM,d).getDay();
+    const cls=isT?'today':dw===0?'sun':dw===6?'sat':'';
+    cells+=`<div class="cal-d${cls?' '+cls:''}">${d}</div>`;
+  }
+  const rem=(fd+ld)%7===0?0:7-((fd+ld)%7);
+  for(let d=1;d<=rem;d++) cells+=`<div class="cal-d other">${d}</div>`;
+  cal.innerHTML=`<div class="cal-hdr"><button class="cal-btn" onclick="calNav(-1)">◀</button><span class="cal-mon">${calY}년 ${MN[calM]}</span><button class="cal-btn" onclick="calNav(1)">▶</button></div><div class="cal-grid">${cells}</div>`;
+}
+
+function calNav(d) { calM+=d; if(calM<0){calM=11;calY--;}if(calM>11){calM=0;calY++;}renderCal(); }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function renderLogin(app) {
+  app.innerHTML = `<div class="auth-pg">
+    <div class="auth-ph">🐰 로그인</div>
+    <div class="auth-body">
+      ${DEMO?'<div class="notice">데모 모드에서는 로그인을 사용할 수 없습니다.</div>':''}
+      <div class="fg"><label>이메일</label><input id="li-em" type="email" placeholder="example@email.com"></div>
+      <div class="fg"><label>비밀번호</label><input id="li-pw" type="password"></div>
+      <button class="btn-s" onclick="doLogin()">로그인</button>
+      <div id="li-err" class="err"></div>
+      <div class="auth-lnk"><a href="#/register">회원가입</a> · <a href="#/">돌아가기</a></div>
+    </div>
+  </div>`;
+}
+
+async function doLogin() {
+  if (DEMO) return;
+  const { error } = await db.auth.signInWithPassword({ email: document.getElementById('li-em').value, password: document.getElementById('li-pw').value });
+  if (error) document.getElementById('li-err').textContent = '로그인 실패: ' + error.message;
+  else go('#/');
+}
+
+/* ============================================================
+   REGISTER
+   ============================================================ */
+function renderRegister(app) {
+  app.innerHTML = `<div class="auth-pg">
+    <div class="auth-ph">🐰 회원가입</div>
+    <div class="auth-body">
+      ${DEMO?'<div class="notice">데모 모드에서는 회원가입을 사용할 수 없습니다.</div>':''}
+      <div class="fg"><label>이메일</label><input id="re-em" type="email" placeholder="example@email.com"></div>
+      <div class="fg"><label>비밀번호 (6자 이상)</label><input id="re-pw" type="password"></div>
+      <div class="fg"><label>아이디 (영문/숫자/_)</label><input id="re-un" type="text" placeholder="my_username"></div>
+      <div class="fg"><label>표시 이름</label><input id="re-nm" type="text" placeholder="닉네임"></div>
+      <button class="btn-s" onclick="doRegister()">회원가입</button>
+      <div id="re-err" class="err"></div>
+      <div class="auth-lnk"><a href="#/login">로그인</a> · <a href="#/">돌아가기</a></div>
+    </div>
+  </div>`;
+}
+
+async function doRegister() {
+  if (DEMO) return;
+  const email=document.getElementById('re-em').value, pw=document.getElementById('re-pw').value;
+  const un=document.getElementById('re-un').value.trim().toLowerCase(), nm=document.getElementById('re-nm').value.trim();
+  const err=document.getElementById('re-err');
+  if(!/^[a-z0-9_]{3,20}$/.test(un)){err.textContent='아이디는 영문 소문자/숫자/_로 3~20자여야 합니다.';return;}
+  const {data,error}=await db.auth.signUp({email,password:pw});
+  if(error){err.textContent=error.message;return;}
+  const {error:pe}=await db.from('profiles').insert({id:data.user.id,username:un,display_name:nm});
+  if(pe){err.textContent='프로필 생성 실패: '+pe.message;return;}
+  go('#/u/'+un);
+}
+
+/* ============================================================
+   EDIT
+   ============================================================ */
+let eHoursWd=[], eHoursHo=[], eTags=[];
+
+function renderEdit(app) {
+  if (!me && !DEMO) { go('#/login'); return; }
+  const p = DEMO ? DEMO_DATA[0] : (myProfile || {});
+  eHoursWd=[...(p.activity_weekday||[])]; eHoursHo=[...(p.activity_holiday||[])]; eTags=[...(p.tags||[])];
+  const roleOpts=Object.entries(ROLES).map(([k,v])=>`<option value="${k}"${p.ff14_role===k?' selected':''}>${v.label}</option>`).join('');
+  const jobOpts=ALL_JOBS.map(j=>`<option value="${j}"${p.ff14_job===j?' selected':''}>${j}</option>`).join('');
+  const mbtiOpts=['',...MBTI].map(m=>`<option value="${m}"${p.mbti===m?' selected':''}>${m||'선택 안함'}</option>`).join('');
+  const bloodOpts=['','A','B','O','AB'].map(b=>`<option value="${b}"${p.blood_type===b?' selected':''}>${b||'선택 안함'}</option>`).join('');
+
+  app.innerHTML = `
+  <div class="edit-pg">
+    ${DEMO?'<div class="notice">데모 모드: 저장은 Supabase 연결 후 가능합니다.</div>':''}
+    <div class="panel"><div class="ph">[ 기본 정보 ]</div><div class="edit-body">
+      <div class="edit-row"><label>아이디 (변경 불가)</label><input type="text" value="${esc(p.username||'')}" disabled></div>
+      <div class="edit-row"><label>표시 이름</label><input id="e-nm" type="text" value="${esc(p.display_name||'')}"></div>
+      <div class="edit-row"><label>한줄 소개</label><input id="e-bio" type="text" value="${esc(p.bio||'')}"></div>
+      <div class="edit-row"><label>자기소개</label><textarea id="e-about">${esc(p.about_me||'')}</textarea></div>
+      <div class="edit-row"><label>아바타 이미지 URL</label><input id="e-av" type="text" value="${esc(p.avatar_url||'')}" placeholder="https://..."></div>
+    </div></div>
+
+    <div class="panel"><div class="ph">[ FF14 정보 ]</div><div class="edit-body">
+      <div class="edit-row"><label>캐릭터명</label><input id="e-char" type="text" value="${esc(p.ff14_char||'')}"></div>
+      <div class="edit-row"><label>서버</label><input id="e-srv" type="text" value="${esc(p.ff14_server||'')}"></div>
+      <div class="edit-row"><label>역할</label><select id="e-role">${roleOpts}</select></div>
+      <div class="edit-row"><label>주 직업</label><select id="e-job">${jobOpts}</select></div>
+      <div class="edit-row"><label>레벨</label><input id="e-lv" type="number" value="${p.ff14_level||100}" min="1" max="100"></div>
+      <div class="edit-row"><label>자유부대</label><input id="e-fc" type="text" value="${esc(p.ff14_fc||'')}"></div>
+    </div></div>
+
+    <div class="panel"><div class="ph">[ 개인 정보 ]</div><div class="edit-body">
+      <div class="edit-row"><label>MBTI</label><select id="e-mbti">${mbtiOpts}</select></div>
+      <div class="edit-row"><label>혈액형</label><select id="e-blood">${bloodOpts}</select></div>
+      <div class="edit-row"><label>좋아하는 것</label><input id="e-likes" type="text" value="${esc(p.likes||'')}"></div>
+      <div class="edit-row"><label>싫어하는 것</label><input id="e-dislikes" type="text" value="${esc(p.dislikes||'')}"></div>
+      <div class="edit-row"><label>취미</label><input id="e-hobbies" type="text" value="${esc(p.hobbies||'')}"></div>
+      <div class="edit-row"><label>태그 (최대 10개)</label>
+        <div style="display:flex;gap:6px;margin-bottom:6px"><input id="e-tag" type="text" placeholder="태그 입력"><button class="btn-cancel" onclick="addTag()">추가</button></div>
+        <div id="tag-disp" class="tag-list">${eTags.map((_,i)=>tagChip(i)).join('')}</div>
+      </div>
+    </div></div>
+
+    <div class="panel"><div class="ph">[ 활동 시간 ]</div><div class="edit-body">
+      <div class="edit-row"><label>평일</label><div class="hp" id="hp-wd">${Array.from({length:24},(_,i)=>`<button class="hbtn${eHoursWd.includes(i)?' on':''}" onclick="toggleH('wd',${i})">${i}</button>`).join('')}</div></div>
+      <div class="edit-row" style="margin-top:8px"><label>주말/공휴일</label><div class="hp" id="hp-ho">${Array.from({length:24},(_,i)=>`<button class="hbtn${eHoursHo.includes(i)?' on':''}" onclick="toggleH('ho',${i})">${i}</button>`).join('')}</div></div>
+    </div></div>
+
+    <div class="panel"><div class="ph">[ SNS ]</div><div class="edit-body">
+      <div class="edit-row"><label>Twitter/X 아이디</label><input id="e-tw" type="text" value="${esc(p.twitter||'')}" placeholder="username"></div>
+      <div class="edit-row"><label>Discord</label><input id="e-dc" type="text" value="${esc(p.discord||'')}" placeholder="user#0000"></div>
+    </div></div>
+
+    <div class="edit-actions">
+      <button class="btn-save" onclick="saveProfile()">저장하기</button>
+      <button class="btn-cancel" onclick="go('#/')">취소</button>
+    </div>
+    <div id="edit-msg" style="padding:6px 12px;font-size:11px;color:var(--red2)"></div>
+  </div>`;
+}
+
+function tagChip(i) { return `<span class="tag" style="cursor:pointer" onclick="removeTag(${i})">${esc(eTags[i])} ✕</span>`; }
+function addTag() { const inp=document.getElementById('e-tag'); const v=inp.value.trim(); if(!v||eTags.includes(v)||eTags.length>=10)return; eTags.push(v); inp.value=''; refreshTags(); }
+function removeTag(i) { eTags.splice(i,1); refreshTags(); }
+function refreshTags() { const d=document.getElementById('tag-disp'); if(d) d.innerHTML=eTags.map((_,i)=>tagChip(i)).join(''); }
+function toggleH(type,h) { const arr=type==='wd'?eHoursWd:eHoursHo; const idx=arr.indexOf(h); if(idx>=0)arr.splice(idx,1);else arr.push(h); const btn=document.querySelector(`#hp-${type} .hbtn:nth-child(${h+1})`); if(btn) btn.classList.toggle('on',arr.includes(h)); }
+
+async function saveProfile() {
+  const msg=document.getElementById('edit-msg');
+  if(DEMO){msg.textContent='데모 모드에서는 저장할 수 없습니다.';return;}
+  const payload={
+    display_name:document.getElementById('e-nm').value, bio:document.getElementById('e-bio').value,
+    about_me:document.getElementById('e-about').value, avatar_url:document.getElementById('e-av').value,
+    ff14_char:document.getElementById('e-char').value, ff14_server:document.getElementById('e-srv').value,
+    ff14_role:document.getElementById('e-role').value, ff14_job:document.getElementById('e-job').value,
+    ff14_level:parseInt(document.getElementById('e-lv').value)||100, ff14_fc:document.getElementById('e-fc').value,
+    mbti:document.getElementById('e-mbti').value, blood_type:document.getElementById('e-blood').value,
+    likes:document.getElementById('e-likes').value, dislikes:document.getElementById('e-dislikes').value,
+    hobbies:document.getElementById('e-hobbies').value, twitter:document.getElementById('e-tw').value,
+    discord:document.getElementById('e-dc').value,
+    activity_weekday:eHoursWd, activity_holiday:eHoursHo, tags:eTags,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await db.from('profiles').update(payload).eq('id',me.id);
+  if(error){msg.textContent='저장 실패: '+error.message;return;}
+  myProfile={...myProfile,...payload}; go('#/u/'+myProfile.username);
+}
+
+/* ============================================================
+   UTILS
+   ============================================================ */
+function pad(n) { return String(n).padStart(2,'0'); }
+function esc(s) {
+  if (!s && s!==0) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================
+   SUPABASE SQL SCHEMA
+   (Supabase 대시보드 → SQL Editor에 붙여넣고 실행)
+   ============================================================
+create table public.profiles (
+  id           uuid not null references auth.users on delete cascade primary key,
+  username     text unique not null,
+  display_name text, bio text, about_me text, avatar_url text,
+  mbti text, blood_type text, likes text, dislikes text, hobbies text,
+  ff14_char text, ff14_server text, ff14_job text,
+  ff14_level   int default 100,
+  ff14_fc text, ff14_role text default 'magic',
+  twitter text, discord text,
+  activity_weekday  int[] default '{}',
+  activity_holiday  int[] default '{}',
+  tags         text[] default '{}',
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+alter table public.profiles enable row level security;
+create policy "view_all"   on public.profiles for select using (true);
+create policy "own_insert" on public.profiles for insert with check (auth.uid() = id);
+create policy "own_update" on public.profiles for update using (auth.uid() = id);
+   ============================================================ */
+
+init();
+</script>
+</body>
+</html>
