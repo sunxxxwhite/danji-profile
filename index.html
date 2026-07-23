@@ -351,9 +351,11 @@ async function init() {
         if (myProfile) {
           localStorage.setItem('lastProfile', myProfile.username);
           const h = location.hash || '#/';
-          if (h === '#/' || h === '#/login') { go('#/u/' + myProfile.username); return; }
+          if (h === '#/login') { go('#/u/' + myProfile.username); return; }
+          const appEl = document.getElementById('app');
+          if (appEl) renderProfile(appEl, currentUsername || myProfile.username);
+          return;
         }
-        if (event === 'SIGNED_IN' && myProfile) { go('#/u/' + myProfile.username); return; }
       } else { myProfile = null; }
       updateNav();
     });
