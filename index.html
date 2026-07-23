@@ -420,16 +420,20 @@ async function renderListing(app) {
     return;
   }
   try {
-    const { data: list, error } = await db.from('profiles').select('*').order('updated_at');
-    if (error) throw new Error(error.message);
+    const { data: list, error } = await db.from('profiles').select('*');
+    if (error) {
+      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류: ${error.message} (code:${error.code})</div>`;
+      return;
+    }
     const items = (list || []).map(p => cardItem(p)).join('');
     app.innerHTML = `<div id="listing-pg">
       <div class="list-hdr">
         <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
         <span class="list-title">단지</span>
+        <span style="color:var(--muted);font-size:10px">(${(list||[]).length}명)</span>
       </div>
       <div class="card-grid">
-        ${items}
+        ${items || '<div style="color:var(--muted);font-size:12px;padding:20px">프로필 없음</div>'}
         ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
           <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
           <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
@@ -437,7 +441,7 @@ async function renderListing(app) {
       </div>
     </div>`;
   } catch(e) {
-    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">목록 로딩 오류: ${e.message}</div>`;
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`;
   }
 }
 
@@ -898,14 +902,16 @@ async function doModalLogin() {
   if (DEMO) return;
   const err = document.getElementById('m-err');
   err.textContent = '로그인 중...';
-  const { error } = await db.auth.signInWithPassword({
-    email: toEmail(document.getElementById('m-em').value),
+  const idVal = document.getElementById('m-em').value;
+  const { data, error } = await db.auth.signInWithPassword({
+    email: toEmail(idVal),
     password: document.getElementById('m-pw').value
   });
   if (error) { err.textContent = '로그인 실패: ' + error.message; return; }
   closeModal();
+  await loadMyProfile();
   if (myProfile) go('#/u/' + myProfile.username);
-  else route();
+  else go('#/u/' + idVal.trim().toLowerCase());
 }
 async function doModalRegister() {
   if (DEMO) return;
