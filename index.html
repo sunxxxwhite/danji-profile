@@ -392,7 +392,7 @@ function route() {
   editMode = false; pendingAvatarFile = null;
   const h = location.hash || '#/';
   const app = document.getElementById('app');
-  if (h === '#/' || h === '')       renderListing(app);
+  if (h === '#/' || h === '')       renderListing(app).catch(e => { app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`; });
   else if (h === '#/login')          renderLogin(app);
   else if (h === '#/register')       { route(); openProfileSetup(); }
   else if (h === '#/edit') {
@@ -419,21 +419,26 @@ async function renderListing(app) {
     </div>`;
     return;
   }
-  const { data: list } = await db.from('profiles').select('*').order('updated_at', { ascending: false });
-  const items = (list || []).map(p => cardItem(p)).join('');
-  app.innerHTML = `<div id="listing-pg">
-    <div class="list-hdr">
-      <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
-      <span class="list-title">단지</span>
-    </div>
-    <div class="card-grid">
-      ${items}
-      ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
-        <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
-        <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
-      </div>` : ''}
-    </div>
-  </div>`;
+  try {
+    const { data: list, error } = await db.from('profiles').select('*').order('updated_at');
+    if (error) throw new Error(error.message);
+    const items = (list || []).map(p => cardItem(p)).join('');
+    app.innerHTML = `<div id="listing-pg">
+      <div class="list-hdr">
+        <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
+        <span class="list-title">단지</span>
+      </div>
+      <div class="card-grid">
+        ${items}
+        ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
+          <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
+          <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  } catch(e) {
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">목록 로딩 오류: ${e.message}</div>`;
+  }
 }
 
 function cardItem(p) {
