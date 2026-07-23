@@ -421,8 +421,9 @@ async function renderListing(app) {
   }
   try {
     const { data: list, error } = await db.from('profiles').select('*');
+    const dbg = `[DEMO:${DEMO} me:${me?.email||'none'} rows:${list?.length??'null'} err:${error?.message||'none'}]`;
     if (error) {
-      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류: ${error.message} (code:${error.code})</div>`;
+      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류: ${error.message}<br><small>${dbg}</small></div>`;
       return;
     }
     const items = (list || []).map(p => cardItem(p)).join('');
@@ -432,6 +433,7 @@ async function renderListing(app) {
         <span class="list-title">단지</span>
         <span style="color:var(--muted);font-size:10px">(${(list||[]).length}명)</span>
       </div>
+      <div style="font-size:10px;color:var(--muted);padding:4px 0">${dbg}</div>
       <div class="card-grid">
         ${items || '<div style="color:var(--muted);font-size:12px;padding:20px">프로필 없음</div>'}
         ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
@@ -441,7 +443,7 @@ async function renderListing(app) {
       </div>
     </div>`;
   } catch(e) {
-    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`;
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}<br>[DEMO:${DEMO} me:${me?.email||'none'} db:${!!db}]</div>`;
   }
 }
 
