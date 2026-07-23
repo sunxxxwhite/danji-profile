@@ -776,10 +776,15 @@ async function saveProfile() {
   if (nb) { nb.disabled = true; nb.textContent = '저장 중...'; }
 
   try {
-    let avatarUrl = document.getElementById('e-av')?.value || myProfile.avatar_url || '';
+    // 업로드 실패 시 기존 avatar_url 유지
+    let avatarUrl = myProfile.avatar_url || '';
+    const urlInput = document.getElementById('e-av')?.value?.trim();
     if (pendingAvatarFile && db) {
       const up = await uploadAvatar(pendingAvatarFile);
       if (up) avatarUrl = up;
+      // up이 null이면 avatarUrl = 기존값 유지 (빈칸 되지 않음)
+    } else if (urlInput !== undefined) {
+      avatarUrl = urlInput || myProfile.avatar_url || '';
     }
 
     const job = document.getElementById('e-job')?.value || myProfile.ff14_job || '';
@@ -799,9 +804,14 @@ async function saveProfile() {
       updated_at:   new Date().toISOString()
     };
 
-    const { data: updRows, error } = await db.from('profiles').update(payload).eq('id', me.id).select();
+    // id 기반 UPDATE → 0행이면 username 기반으로 재시도
+    let { data: updRows, error } = await db.from('profiles').update(payload).eq('id', me.id).select();
+    if (!error && (!updRows || updRows.length === 0) && myProfile.username) {
+      const res = await db.from('profiles').update(payload).eq('username', myProfile.username).select();
+      updRows = res.data; error = res.error;
+    }
     if (error) { alert('저장 실패: ' + error.message); return; }
-    if (!updRows || updRows.length === 0) { alert('저장 실패: 변경된 행이 없습니다.'); return; }
+    if (!updRows || updRows.length === 0) { alert('저장 실패: 행을 찾을 수 없습니다.'); return; }
 
     myProfile = { ...myProfile, ...payload };
     editMode = false;
@@ -812,6 +822,7 @@ async function saveProfile() {
     alert('저장 중 오류: ' + (e?.message || e));
   } finally {
     if (nb) { nb.disabled = false; }
+    updateNav();
   }
 }
 
@@ -819,10 +830,14 @@ function saveSection() { saveProfile(); }
 
 async function uploadAvatar(file) {
   if (!db || !me) return null;
-  const ext = file.name.split('.').pop().toLowerCase();
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${me.id}.${ext}`;
   const { error } = await db.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
-  if (error) { alert('사진 업로드 실패: ' + error.message); return null; }
+  if (error) {
+    showToast('사진 업로드 실패 — Supabase Storage 권한을 확인하세요');
+    console.error('[upload]', error.message);
+    return null;
+  }
   return db.storage.from('avatars').getPublicUrl(path).data.publicUrl;
 }
 
