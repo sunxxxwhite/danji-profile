@@ -348,6 +348,11 @@ async function init() {
           autoEditOnLoad = true;
         }
         updateNav();
+        if (myProfile) {
+          localStorage.setItem('lastProfile', myProfile.username);
+          const h = location.hash || '#/';
+          if (h === '#/' || h === '#/login') { go('#/u/' + myProfile.username); return; }
+        }
         if (event === 'SIGNED_IN' && myProfile) { go('#/u/' + myProfile.username); return; }
       } else { myProfile = null; }
       updateNav();
@@ -358,8 +363,17 @@ async function init() {
 
 async function loadMyProfile() {
   if (!db || !me) return;
-  const { data } = await db.from('profiles').select('*').eq('id', me.id).single();
-  myProfile = data;
+  let { data } = await db.from('profiles').select('*').eq('id', me.id).single();
+  if (!data && me.email) {
+    // id 기반 조회 실패 시 username으로 재시도
+    const un = me.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g,'_').slice(0,20);
+    const res = await db.from('profiles').select('*').eq('username', un).maybeSingle();
+    if (res.data) data = res.data;
+  }
+  if (data) {
+    myProfile = data;
+    localStorage.setItem('lastProfile', data.username);
+  }
 }
 async function tryCreatePendingProfile() {
   const raw = localStorage.getItem('pendingProfile');
@@ -472,7 +486,14 @@ async function renderListing(app) {
     }
 
     // Step 3: own profile fallback (logged-in only)
-    if ((!list || list.length === 0) && myProfile) list = [myProfile];
+    if (!list && myProfile) list = [myProfile];
+
+    // Step 4: username 개별조회 - localStorage 또는 'danji' (anon fallback)
+    if (!list) {
+      const tryUn = localStorage.getItem('lastProfile') || 'danji';
+      const { data: p4 } = await db.from('profiles').select('*').eq('username', tryUn).maybeSingle();
+      if (p4) { list = [p4]; diag += ` un:${tryUn}`; }
+    }
 
     const items = (list || []).map(p => cardItem(p)).join('');
     app.innerHTML = `<div id="listing-pg">
