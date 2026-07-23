@@ -764,8 +764,15 @@ async function saveProfile() {
       updated_at:   new Date().toISOString()
     };
 
-    const { error } = await db.from('profiles').update(payload).eq('id', me.id);
-    if (error) { alert('저장 실패: ' + error.message); return; }
+    const { data: updRows, error } = await db.from('profiles').update(payload).eq('id', me.id).select();
+    if (error) {
+      alert('저장 실패 (DB오류):\n' + error.message + '\n코드: ' + (error.code||'?') + '\nmy id: ' + me.id);
+      return;
+    }
+    if (!updRows || updRows.length === 0) {
+      alert('저장 실패: 업데이트된 행 없음\n(me.id=' + me.id + ')\n프로필 ID가 계정 ID와 다를 수 있어요.\nSQL Editor에서 확인 필요합니다.');
+      return;
+    }
 
     myProfile = { ...myProfile, ...payload };
     editMode = false;
