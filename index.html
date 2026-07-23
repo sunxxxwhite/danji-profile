@@ -522,7 +522,6 @@ async function renderProfile(app, username) {
         <hr class="l-div">
         <nav class="l-nav">
           <a class="on"><svg class="rab" width="11" height="14" viewBox="0 0 24 24"><use href="#rab-s"/></svg>FF14 프로필</a>
-          <a onclick="ss('s-about')"><svg class="rab" width="11" height="14" viewBox="0 0 24 24"><use href="#rab-s"/></svg>자기소개</a>
           <a onclick="ss('s-intro')"><svg class="rab" width="11" height="14" viewBox="0 0 24 24"><use href="#rab-s"/></svg>소개</a>
           <a onclick="ss('s-act')"><svg class="rab" width="11" height="14" viewBox="0 0 24 24"><use href="#rab-s"/></svg>활동 시간</a>
         </nav>
@@ -574,18 +573,6 @@ async function renderProfile(app, username) {
             <span class="ffv${p.ff14_fc ? '' : ' empty'}" id="v-fc">${esc(p.ff14_fc || '—')}</span>
             <input class="ei ffv-inp" id="e-fc" value="${esc(p.ff14_fc||'')}" placeholder="자유부대명">
           </div>
-        </div>
-      </div>
-
-      <!-- 자기소개 -->
-      <div class="panel" id="s-about">
-        <div class="ph">
-          <span><svg class="rab" width="10" height="13" viewBox="0 0 24 24" fill="#fff"><use href="#rab-s"/></svg> 자기소개</span>
-          <button class="esave" onclick="saveSection()">저장</button>
-        </div>
-        <div class="sc">
-          <div class="ev${p.about_me ? '' : ' empty'}" id="v-about">${p.about_me ? esc(p.about_me).replace(/\n/g,'<br>') : '자기소개를 입력해 주세요.'}</div>
-          <textarea class="ei" id="e-about" placeholder="자기소개를 자유롭게 입력해 주세요.">${esc(p.about_me||'')}</textarea>
         </div>
       </div>
 
@@ -684,7 +671,7 @@ async function saveProfile() {
   const payload = {
     display_name: document.getElementById('e-dname')?.value || '',
     bio:          document.getElementById('e-bio')?.value || '',
-    about_me:     document.getElementById('e-about')?.value || '',
+
     hobbies:      document.getElementById('e-intro')?.value || '',
     avatar_url:   avatarUrl,
     ff14_char:    document.getElementById('e-char')?.value || '',
@@ -715,7 +702,7 @@ async function uploadAvatar(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   const path = `${me.id}.${ext}`;
   const { error } = await db.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
-  if (error) { console.error(error); return null; }
+  if (error) { alert('사진 업로드 실패: ' + error.message); return null; }
   return db.storage.from('avatars').getPublicUrl(path).data.publicUrl;
 }
 
