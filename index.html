@@ -263,10 +263,22 @@ hr.l-div{border:none;border-top:1px solid var(--b1);margin:8px 0;}
     </div>
     <div class="modal-body">
       <div id="m-notice" class="m-notice" style="display:none">Supabase 연결 후 사용 가능합니다.</div>
-      <div class="m-fg"><label>아이디</label><input id="m-em" type="text" placeholder="아이디"></div>
-      <div class="m-fg"><label>비밀번호</label><input id="m-pw" type="password" placeholder="비밀번호"></div>
-      <button class="m-btn" onclick="doModalLogin()">로그인</button>
-      <div class="m-err" id="m-err"></div>
+
+      <!-- 로그인 폼 -->
+      <div id="form-login">
+        <div class="m-fg"><label>아이디</label><input id="m-em" type="text" placeholder="아이디"></div>
+        <div class="m-fg"><label>비밀번호</label><input id="m-pw" type="password" placeholder="비밀번호"></div>
+        <button class="m-btn" onclick="doModalLogin()">로그인</button>
+        <div class="m-err" id="m-err"></div>
+      </div>
+
+      <!-- 프로필 생성 폼 (첫 로그인 후) -->
+      <div id="form-setup" style="display:none">
+        <div class="m-fg"><label>아이디 (영문/숫자/_)</label><input id="s-un" type="text" placeholder="my_id"></div>
+        <div class="m-fg"><label>표시 이름</label><input id="s-nm" type="text" placeholder="닉네임"></div>
+        <button class="m-btn" onclick="doProfileSetup()">프로필 만들기</button>
+        <div class="m-err" id="s-err"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -376,7 +388,7 @@ function route() {
   const app = document.getElementById('app');
   if (h === '#/' || h === '')       renderListing(app);
   else if (h === '#/login')          renderLogin(app);
-  else if (h === '#/register')       renderRegister(app);
+  else if (h === '#/register')       { route(); openProfileSetup(); }
   else if (h === '#/edit') {
     if (myProfile) { go('#/u/' + myProfile.username); return; }
     go('#/login');
@@ -410,7 +422,7 @@ async function renderListing(app) {
     </div>
     <div class="card-grid">
       ${items}
-      ${me && !myProfile ? `<div class="card-new" onclick="go('#/register')">
+      ${me && !myProfile ? `<div class="card-new" onclick="openProfileSetup()">
         <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
         <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
       </div>` : ''}
@@ -818,12 +830,36 @@ function openModal() {
   const m = document.getElementById('login-modal');
   const notice = document.getElementById('m-notice');
   if (notice) notice.style.display = DEMO ? '' : 'none';
+  document.getElementById('form-login').style.display = '';
+  document.getElementById('form-setup').style.display = 'none';
+  document.getElementById('modal-title').textContent = '로그인';
   m.style.display = '';
   document.getElementById('m-em').focus();
+}
+function openProfileSetup() {
+  const m = document.getElementById('login-modal');
+  document.getElementById('form-login').style.display = 'none';
+  document.getElementById('form-setup').style.display = '';
+  document.getElementById('modal-title').textContent = '프로필 설정';
+  m.style.display = '';
+  document.getElementById('s-un').focus();
 }
 function closeModal() {
   document.getElementById('login-modal').style.display = 'none';
   document.getElementById('m-err').textContent = '';
+}
+async function doProfileSetup() {
+  if (!me) return;
+  const un  = document.getElementById('s-un').value.trim().toLowerCase();
+  const nm  = document.getElementById('s-nm').value.trim();
+  const err = document.getElementById('s-err');
+  if (!/^[a-z0-9_]{3,20}$/.test(un)) { err.textContent = '아이디는 영소문자/숫자/_로 3~20자'; return; }
+  err.textContent = '처리 중...';
+  const { error } = await db.from('profiles').insert({ id: me.id, username: un, display_name: nm });
+  if (error) { err.textContent = '생성 실패: ' + error.message; return; }
+  await loadMyProfile();
+  closeModal();
+  go('#/u/' + un);
 }
 function toEmail(id) { return id.trim().toLowerCase() + '@danji.local'; }
 async function doModalLogin() {
