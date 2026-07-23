@@ -436,32 +436,46 @@ async function renderListing(app) {
     return;
   }
   try {
-    // Build headers: apikey always, Authorization only if we have a real user JWT
-    const hdrs = { 'apikey': SUPABASE_KEY };
-    if (db) {
-      const { data: sd } = await db.auth.getSession();
-      if (sd?.session?.access_token) hdrs['Authorization'] = `Bearer ${sd.session.access_token}`;
+    // Try supabase-js first (authenticated users automatically use JWT)
+    let list = null;
+    const { data: qdata, error: qerr } = await db.from('profiles').select('*');
+    $d('db: rows=' + (qdata?.length ?? 'null') + ' err=' + (qerr?.message || 'none'));
+
+    if (!qerr && qdata && qdata.length > 0) {
+      list = qdata;
+    } else if (qerr || !qdata || qdata.length === 0) {
+      // Fallback: raw fetch with only apikey (no Bearer for anon)
+      const hdrs = { 'apikey': SUPABASE_KEY };
+      if (me) {
+        const { data: sd } = await db.auth.getSession();
+        if (sd?.session?.access_token) hdrs['Authorization'] = `Bearer ${sd.session.access_token}`;
+      }
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, { headers: hdrs });
+        $d('fetch: ' + res.status);
+        if (res.ok) {
+          const fetched = await res.json();
+          $d('fetch: rows=' + fetched.length);
+          if (fetched.length > 0) list = fetched;
+        }
+      } catch(fe) { $d('fetch err: ' + fe.message); }
     }
-    $d('listing: fetch 시작...');
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, { headers: hdrs });
-    $d('listing: HTTP ' + res.status);
-    if (!res.ok) {
-      const txt = await res.text();
-      $d('listing: 오류 ' + res.status + ' ' + txt.slice(0,80));
-      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">DB오류 (${res.status}): ${esc(txt.slice(0,300))}</div>`;
-      return;
+
+    // Last resort: show own profile if logged in (guaranteed to exist)
+    if ((!list || list.length === 0) && myProfile) {
+      list = [myProfile];
+      $d('using myProfile fallback');
     }
-    const list = await res.json();
-    $d('listing: rows=' + list.length + ' me=' + (me?.email||'none'));
-    const items = list.map(p => cardItem(p)).join('');
+
+    const items = (list || []).map(p => cardItem(p)).join('');
     app.innerHTML = `<div id="listing-pg">
       <div class="list-hdr">
         <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
         <span class="list-title">단지</span>
-        <span style="color:var(--muted);font-size:10px">(${list.length}명)</span>
+        <span style="color:var(--sub);font-size:10px">(${(list||[]).length}명)</span>
       </div>
       <div class="card-grid">
-        ${items || '<div style="color:var(--muted);font-size:12px;padding:20px">프로필 없음</div>'}
+        ${items || '<div style="color:var(--txt);font-size:12px;padding:20px;opacity:.5">프로필 없음</div>'}
         ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
           <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
           <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
@@ -469,7 +483,8 @@ async function renderListing(app) {
       </div>
     </div>`;
   } catch(e) {
-    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류: ${e.message}</div>`;
+    $d('catch: ' + e.message);
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--txt)">오류: ${e.message}</div>`;
   }
 }
 
