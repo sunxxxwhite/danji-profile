@@ -463,6 +463,7 @@ function cardItem(p) {
 /* ── PROFILE PAGE ── */
 async function renderProfile(app, username) {
   currentUsername = username;
+  try {
   let p;
   if (DEMO) {
     p = null;
@@ -655,6 +656,11 @@ async function renderProfile(app, username) {
   startClock();
   calY = undefined; calM = undefined; renderCal();
   if (autoEditOnLoad) { autoEditOnLoad = false; toggleEditMode(); }
+  } catch(e) {
+    console.error('[renderProfile]', e);
+    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">오류가 발생했습니다: ${esc(e.message || String(e))}<br><br><a href="javascript:location.reload()" style="color:var(--red)">새로고침</a></div>`;
+    updateNav();
+  }
 }
 
 /* ── EDIT MODE TOGGLE ── */
@@ -868,6 +874,15 @@ function pad(n) { return String(n).padStart(2,'0'); }
 function esc(s) {
   if (!s && s !== 0) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mkRabSvg(w, h) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  el.setAttribute('class', 'rab');
+  el.setAttribute('width', w); el.setAttribute('height', h);
+  el.setAttribute('viewBox', '0 0 24 24');
+  el.setAttribute('fill', 'var(--red2)');
+  el.innerHTML = '<use href="#rab-s"/>';
+  return el;
 }
 
 /* ── CLOCK ── */
