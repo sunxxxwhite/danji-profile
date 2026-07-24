@@ -352,8 +352,10 @@ async function init() {
           localStorage.setItem('lastProfile', myProfile.username);
           const h = location.hash || '#/';
           if (h === '#/login') { go('#/u/' + myProfile.username); return; }
-          const appEl = document.getElementById('app');
-          if (appEl) renderProfile(appEl, currentUsername || myProfile.username);
+          if (!isSaving && !editMode) {
+            const appEl = document.getElementById('app');
+            if (appEl) renderProfile(appEl, currentUsername || myProfile.username);
+          }
           return;
         }
       } else { myProfile = null; }
@@ -960,6 +962,7 @@ function esc(s) {
 /* ── CLOCK ── */
 function stopClock() { if (clockTmr) { clearInterval(clockTmr); clockTmr = null; } }
 function startClock() {
+  stopClock();
   const days = '일월화수목금토';
   function tick() {
     const n = new Date();
