@@ -330,7 +330,7 @@ async function init() {
       db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     } catch(e) {
       document.getElementById('app').innerHTML =
-        `<div style="text-align:center;padding:40px;color:var(--muted)">Supabase 초기화 오류: ${e.message}</div>`;
+        `<div style="text-align:center;padding:40px;color:var(--muted)">Supabase 초기화 오류: ${esc(e.message)}</div>`;
       updateNav(); return;
     }
     try {
@@ -445,95 +445,6 @@ function route() {
 window.addEventListener('hashchange', route);
 function go(h) { location.hash = h; }
 
-/* ── LISTING ── */
-async function renderListing(app) {
-  currentUsername = null; updateNav();
-  if (DEMO) {
-    const demoDbg = `DEMO=true | supabase=${typeof supabase} | url="${SUPABASE_URL}"`;
-    app.innerHTML = `<div id="listing-pg">
-      <div class="list-hdr">
-        <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
-        <span class="list-title">단지</span>
-        <span style="color:var(--muted);font-size:10px">[ DEMO 모드 ]</span>
-      </div>
-      <div style="font-size:12px;color:var(--txt);padding:4px 0 6px;word-break:break-all">${demoDbg}</div>
-      <div class="notice-box">Supabase URL과 KEY를 설정하면 프로필이 표시됩니다.</div>
-    </div>`;
-    return;
-  }
-  try {
-    let list = null;
-    let diag = '';
-
-    // Step 0: SECURITY DEFINER function (bypasses RLS/anon-key issues entirely)
-    try {
-      const { data: rpcData, error: rpcErr } = await db.rpc('get_all_profiles');
-      console.log('[list] rpc:', rpcData?.length, rpcErr?.message);
-      diag = `rpc:${rpcErr ? rpcErr.code||'err' : rpcData?.length}`;
-      if (!rpcErr && rpcData && rpcData.length > 0) list = rpcData;
-    } catch(re) { diag = 'rpc:ex'; }
-
-    // Step 1: supabase-js direct query
-    if (!list) {
-      const { data: qdata, error: qerr } = await db.from('profiles').select('*');
-      console.log('[list] sb:', qdata?.length, qerr?.message);
-      diag += ` sb:${qerr ? qerr.code||'err' : qdata?.length??'null'}`;
-      if (!qerr && qdata && qdata.length > 0) list = qdata;
-    }
-
-    // Step 2: raw fetch with apikey header only
-    if (!list) {
-      const hdrs = { 'apikey': SUPABASE_KEY };
-      if (me) {
-        const { data: sd } = await db.auth.getSession();
-        if (sd?.session?.access_token) hdrs['Authorization'] = `Bearer ${sd.session.access_token}`;
-      }
-      try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*`, { headers: hdrs });
-        if (res.ok) {
-          const fetched = await res.json();
-          console.log('[list] fetch:', res.status, fetched?.length);
-          diag += ` fetch:${res.status}/${fetched?.length}`;
-          if (fetched.length > 0) list = fetched;
-        } else {
-          const txt = await res.text();
-          console.warn('[list] fetch err:', res.status, txt);
-          diag += ` fetch:${res.status}`;
-        }
-      } catch(fe) { diag += ' fetch:ex'; }
-    }
-
-    // Step 3: own profile fallback (logged-in only)
-    if (!list && myProfile) list = [myProfile];
-
-    // Step 4: username 개별조회 - localStorage 또는 'danji' (anon fallback)
-    if (!list) {
-      const tryUn = localStorage.getItem('lastProfile') || 'danji';
-      const { data: p4 } = await db.from('profiles').select('*').eq('username', tryUn).maybeSingle();
-      if (p4) { list = [p4]; diag += ` un:${tryUn}`; }
-    }
-
-    const items = (list || []).map(p => cardItem(p)).join('');
-    app.innerHTML = `<div id="listing-pg">
-      <div class="list-hdr">
-        <svg class="rab" width="22" height="28" viewBox="0 0 24 24" fill="var(--red)"><use href="#rab-s"/></svg>
-        <span class="list-title">단지</span>
-        <span style="color:var(--sub);font-size:10px">(${(list||[]).length}명)</span>
-      </div>
-      <div id="list-diag" style="font-size:12px;color:var(--txt);padding:4px 0 6px;word-break:break-all">${diag}</div>
-      <div class="card-grid">
-        ${items || '<div style="color:var(--txt);font-size:12px;padding:20px;opacity:.5">프로필 없음</div>'}
-        ${me && !myProfile ? `<div class="card-new" onclick="autoEditOnLoad=true;go('#/u/'+me.email.split('@')[0])">
-          <svg class="rab" width="28" height="35" viewBox="0 0 24 24" fill="var(--red2)"><use href="#rab-s"/></svg>
-          <div style="color:var(--sub);font-size:11px">내 프로필 만들기</div>
-        </div>` : ''}
-      </div>
-    </div>`;
-  } catch(e) {
-    console.error('[list] ex:', e);
-    app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--txt)">오류: ${e.message}</div>`;
-  }
-}
 
 function cardItem(p) {
   const role = ROLES[p.ff14_role] || ROLES.magic;
@@ -559,7 +470,7 @@ async function renderProfile(app, username) {
     const { data, error } = await db.from('profiles').select('*').eq('username', username).single();
     p = data;
     if (error && error.code !== 'PGRST116') {
-      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">프로필 불러오기 실패: ${error.message}<br><a href="#/">← 목록으로</a></div>`;
+      app.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">프로필 불러오기 실패: ${esc(error.message)}<br><a href="#/">← 목록으로</a></div>`;
       updateNav(); return;
     }
   }
